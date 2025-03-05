@@ -1,0 +1,25 @@
+body {
+    margin: 0;
+    padding: 0;
+    /* font-family: 'Roboto', sans-serif; */
+    background-color: #f4f4f4;
+}
+
+.commonBtn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+
+    &:hover {
+        background-color: #45a049;
+    }
+
+    @media (max-width: 768px) {
+        width: 100%;
+    }
+}

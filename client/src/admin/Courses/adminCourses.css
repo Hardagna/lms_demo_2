@@ -1,0 +1,59 @@
+.admin-courses {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+
+    .left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+
+        .dashboard-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-top: 20px;
+
+        }
+    }
+
+    .right {
+        .course-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-top: 20px;
+
+            h2 {
+                font-size: 2rem;
+                margin-bottom: 1rem;
+            }
+
+            form {
+                text-align: left;
+                width: 100%;
+                padding: 1rem;
+                border-radius: 5px;
+                background-color: #fff;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+                label {
+                    font-size: 1.2rem;
+                    margin-bottom: 0.5rem;
+                }
+
+                input, select {
+                    width: 100%;
+                    padding: 0.5rem;
+                    margin-bottom: 1rem;
+                    border: 1px solid #ccc;
+                    border-radius: 5px;
+                }
+            }
+        }
+    }
+}

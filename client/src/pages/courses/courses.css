@@ -1,0 +1,26 @@
+.courses {
+    display: flex;
+    /* flex-wrap: wrap; */
+    justify-content: center;
+    margin-top: 20px;
+    min-height: 100vh;
+
+    h2 {
+        margin-bottom: 20px;
+    }
+
+    .course-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 10px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        /* width: 300px; */
+        overflow: hidden;
+        transition: all 0.3s ease;
+        gap: 10px;
+    }
+}
+
