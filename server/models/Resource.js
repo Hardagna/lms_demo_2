@@ -7,7 +7,7 @@ const ResourceSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["pdf", "video", "webpage", "wikipedia", "audio"],
+    enum: ["pdf", "video", "webpage", "wikipedia", "audio", "document", "image"],
     required: true,
   },
   url: {
@@ -21,6 +21,10 @@ const ResourceSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Lecture",
     required: true,
+  },
+  isUploadedFile: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,

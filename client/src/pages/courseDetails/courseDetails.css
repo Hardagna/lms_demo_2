@@ -1,62 +1,64 @@
+@import url('../../styles/variables.css');
+
 .courseDetails {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-top: 50px;
+  margin-top: var(--space-xl);
 
   .course-header {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: var(--space-lg);
 
     .course-img {
       width: 200px;
       height: 200px;
       border-radius: 50%;
-      margin-bottom: 10px;
+      margin-bottom: var(--space-md);
     }
 
     .course-details {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--space-md);
 
-        h2 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin-bottom: 5px;
+      h2 {
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-bold);
+        margin-bottom: var(--space-xs);
+        color: var(--text-dark);
+      }
+
+      h4 {
+        font-size: var(--font-size-md);
+        font-weight: var(--font-weight-normal);
+        margin-bottom: var(--space-xs);
+        color: var(--text-medium);
+      }
+
+      h5 {
+        font-size: var(--font-size-md);
+        font-weight: var(--font-weight-normal);
+        margin-bottom: var(--space-xs);
+        color: var(--text-medium);
+      }
+
+      a {
+        font-size: var(--font-size-md);
+        font-weight: var(--font-weight-normal);
+        margin-bottom: var(--space-xs);
+        color: var(--primary-color);
+        
+        &:hover {
+          color: var(--primary-dark);
         }
-
-        h4 {
-          font-size: 1rem;
-          font-weight: 400;
-          margin-bottom: 5px;
-        }
-
-        h5 {
-          font-size: 1rem;
-          font-weight: 400;
-          margin-bottom: 5px;
-        }
-
-        a {
-          font-size: 1rem;
-          font-weight: 400;
-          margin-bottom: 5px;
-
-        }
-
+      }
     }
-
-    /* p {
-      font-size: 1rem;
-      font-weight: 400;
-      margin-bottom: 5px;
-    } */
   }
 }

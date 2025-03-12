@@ -1,44 +1,47 @@
+@import url('../../styles/variables.css');
+
 .auth-page {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--background-grey);
 
   .auth-form {
     width: 100%;
     max-width: 400px;
-    padding: 15px;
-    border-radius: 5px;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: var(--space-lg);
+    border-radius: var(--border-radius-md);
+    background-color: var(--background-light);
+    box-shadow: var(--shadow-md);
 
     h2 {
-      margin-bottom: 15px;
+      margin-bottom: var(--space-lg);
       text-align: center;
+      color: var(--text-dark);
     }
     
     form {
-        display: flex;
-        flex-direction: column;
-        text-align: left;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
 
-        label {
-          margin-bottom: 5px;
-          display: block;
-          font-size: 14px;
-          font-weight: 500;
-          color: #333;
-        }
+      label {
+        margin-bottom: var(--space-xs);
+        display: block;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--text-dark);
+      }
 
-        input {
-          margin-bottom: 10px;
-          padding: 10px;
-          border: 1px solid #ccc;
-          border-radius: 5px;
-          font-size: 14px;
-          color: #333;
-        }
+      input {
+        margin-bottom: var(--space-md);
+        padding: var(--space-md);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-md);
+        font-size: var(--font-size-sm);
+        color: var(--text-dark);
+      }
     }
   }
 }

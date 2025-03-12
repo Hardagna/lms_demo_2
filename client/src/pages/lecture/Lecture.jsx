@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { useParams } from 'react-router-dom';
 import { TiTick } from "react-icons/ti";
 import { FaSearch, FaFilePdf, FaYoutube, FaGlobe, FaWikipediaW, FaHeadphones, FaTrash, FaExternalLinkAlt } from "react-icons/fa";
+import { FaFileUpload, FaFile, FaFileImage, FaFileAudio, FaFileVideo, FaFileAlt } from 'react-icons/fa';
 
 const Lecture = ({ user }) => {
     // Existing state variables
@@ -36,6 +37,14 @@ const Lecture = ({ user }) => {
     const [resources, setResources] = useState([]);
     const [loadingResources, setLoadingResources] = useState(false);
     const [selectedLectureForResource, setSelectedLectureForResource] = useState('');
+
+    // Add new state variables for resource upload
+    const [showUploadResource, setShowUploadResource] = useState(false);
+    const [resourceTitle, setResourceTitle] = useState('');
+    const [resourceDescription, setResourceDescription] = useState('');
+    const [resourceFile, setResourceFile] = useState(null);
+    const [resourceFilePreview, setResourceFilePreview] = useState('');
+    const [uploadingResource, setUploadingResource] = useState(false);
 
     const params = useParams();
     const navigate = useNavigate();
@@ -271,8 +280,12 @@ const Lecture = ({ user }) => {
                 return <FaWikipediaW />;
             case 'audio':
                 return <FaHeadphones />;
+            case 'image':
+                return <FaFileImage />;
+            case 'document':
+                return <FaFileAlt />;
             default:
-                return <FaGlobe />;
+                return <FaFile />;
         }
     };
 
@@ -285,6 +298,107 @@ const Lecture = ({ user }) => {
             return url.substring(0, 30) + (url.length > 30 ? '...' : '');
         }
     }
+
+    // Handle resource file change
+    const handleResourceFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        setResourceFile(file);
+        
+        // Update resource type based on file extension
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        
+        // Set resource type based on file extension
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension)) {
+            setResourceType('image');
+            // Create preview for image files
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setResourceFilePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        } else if (['pdf'].includes(fileExtension)) {
+            setResourceType('pdf');
+            setResourceFilePreview('');
+        } else if (['mp4', 'webm', 'ogg', 'mov'].includes(fileExtension)) {
+            setResourceType('video');
+            // Create preview for video files
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setResourceFilePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        } else if (['mp3', 'wav', 'ogg'].includes(fileExtension)) {
+            setResourceType('audio');
+            setResourceFilePreview('');
+        } else {
+            setResourceType('document');
+            setResourceFilePreview('');
+        }
+    };
+
+    // Handle resource upload submission
+    const uploadResourceHandler = async (e) => {
+        e.preventDefault();
+        
+        if (!selectedLectureForResource) {
+            toast.error('Please select a lecture to add resources to');
+            return;
+        }
+        
+        if (!resourceFile) {
+            toast.error('Please select a file to upload');
+            return;
+        }
+        
+        setUploadingResource(true);
+        
+        const formData = new FormData();
+        formData.append('title', resourceTitle);
+        formData.append('description', resourceDescription);
+        formData.append('type', resourceType);
+        formData.append('file', resourceFile);
+        
+        try {
+            const { data } = await axios.post(
+                `${server}/api/admin/resource/upload/${selectedLectureForResource}`,
+                formData,
+                {
+                    headers: {
+                        token: localStorage.getItem("token"),
+                    }
+                }
+            );
+            
+            toast.success('Resource uploaded successfully');
+            
+            // Reset form
+            setResourceTitle('');
+            setResourceDescription('');
+            setResourceFile(null);
+            setResourceFilePreview('');
+            
+            // If the current active lecture is the same as the one resources are being added to,
+            // refresh the resources list
+            if (lecture._id === selectedLectureForResource) {
+                getLectureResources();
+            }
+            
+            setUploadingResource(false);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Error uploading resource');
+            setUploadingResource(false);
+        }
+    };
+
+    // Render resource link appropriately (external URL vs local file)
+    const renderResourceLink = (resource) => {
+        if (resource.isUploadedFile) {
+            return `${server}/${resource.url}`;
+        }
+        return resource.url;
+    };
 
     // Update useEffect to fetch resources when lecture changes
     useEffect(() => {
@@ -304,9 +418,11 @@ const Lecture = ({ user }) => {
     return (
         <>
             <div className="progress">
-                <p>Lecture completed {completedLecture} out of {lecLength}</p>
-                <br />
-                <progress value={completed} max={100}></progress> {progress.progressPercentage}%
+                <div className="progress-bar" style={{ width: `${completed}%` }}></div>
+                <div className="progress-text">
+                    <span>Lectures completed: {completedLecture} out of {lecLength}</span>
+                    <span>{completed}% complete</span>
+                </div>
             </div>
 
             <div className="lec-page">
@@ -340,10 +456,11 @@ const Lecture = ({ user }) => {
                                             {resources.map((resource) => (
                                                 <li key={resource._id} className="resource-item">
                                                     <a 
-                                                        href={resource.url} 
+                                                        href={renderResourceLink(resource)} 
                                                         target="_blank" 
                                                         rel="noopener noreferrer"
                                                         className="resource-link"
+                                                        download={resource.isUploadedFile}
                                                     >
                                                         <span className={`resource-icon resource-icon-${resource.type}`}>
                                                             {getResourceIcon(resource.type)}
@@ -351,6 +468,9 @@ const Lecture = ({ user }) => {
                                                         <div>
                                                             <h4>{resource.title}</h4>
                                                             <p>{resource.description}</p>
+                                                            {resource.isUploadedFile && (
+                                                                <small className="uploaded-file-label">Uploaded file</small>
+                                                            )}
                                                         </div>
                                                     </a>
                                                     {user?.role === "admin" && (
@@ -385,6 +505,7 @@ const Lecture = ({ user }) => {
                                 onClick={() => {
                                     setShowAddForm(!showAddForm);
                                     if (showResourceSearch) setShowResourceSearch(false);
+                                    if (showUploadResource) setShowUploadResource(false);
                                 }}
                             >
                                 {showAddForm ? "Close Add Form" : "Add Lecture"}
@@ -396,9 +517,22 @@ const Lecture = ({ user }) => {
                                 onClick={() => {
                                     setShowResourceSearch(!showResourceSearch);
                                     if (showAddForm) setShowAddForm(false);
+                                    if (showUploadResource) setShowUploadResource(false);
                                 }}
                             >
                                 {showResourceSearch ? "Hide Resource Search" : "Find Online Resources"}
+                            </button>
+
+                            {/* OPTION 3: Upload resources from system */}
+                            <button 
+                                className={`commonBtn upload-resource-btn ${showUploadResource ? 'active-btn' : ''}`} 
+                                onClick={() => {
+                                    setShowUploadResource(!showUploadResource);
+                                    if (showAddForm) setShowAddForm(false);
+                                    if (showResourceSearch) setShowResourceSearch(false);
+                                }}
+                            >
+                                {showUploadResource ? "Hide Upload Form" : "Upload Resource"}
                             </button>
                         </div>
                     )}
@@ -524,6 +658,95 @@ const Lecture = ({ user }) => {
                                     </div>
                                 ) : null}
                             </div>
+                        </div>
+                    )}
+                    
+                    {/* Upload Resource from System - OPTION 3 */}
+                    {showUploadResource && (
+                        <div className="resource-upload-form">
+                            <h3>Upload Resource File</h3>
+                            
+                            {/* Lecture selector dropdown */}
+                            <div className="lecture-selector">
+                                <label htmlFor="lectureSelector">Add resource to:</label>
+                                <select 
+                                    id="lectureSelector"
+                                    value={selectedLectureForResource} 
+                                    onChange={(e) => setSelectedLectureForResource(e.target.value)}
+                                >
+                                    <option value="">Select a lecture</option>
+                                    {lectures.map(lec => (
+                                        <option key={lec._id} value={lec._id}>
+                                            {lec.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <form onSubmit={uploadResourceHandler}>
+                                <div className="resource-upload-container">
+                                    <label htmlFor="resourceTitle">Resource Title</label>
+                                    <input 
+                                        type="text" 
+                                        id="resourceTitle"
+                                        placeholder="Enter resource title" 
+                                        value={resourceTitle} 
+                                        onChange={(e) => setResourceTitle(e.target.value)}
+                                        required
+                                    />
+                                    
+                                    <label htmlFor="resourceDescription">Description (optional)</label>
+                                    <textarea 
+                                        id="resourceDescription"
+                                        placeholder="Enter resource description" 
+                                        value={resourceDescription} 
+                                        onChange={(e) => setResourceDescription(e.target.value)}
+                                    ></textarea>
+                                    
+                                    <label htmlFor="resourceFile">Choose File</label>
+                                    <input 
+                                        type="file" 
+                                        id="resourceFile"
+                                        onChange={handleResourceFileChange}
+                                        required
+                                    />
+                                    
+                                    {resourceType === 'image' && resourceFilePreview && (
+                                        <div className="file-preview">
+                                            <img src={resourceFilePreview} alt="Preview" />
+                                        </div>
+                                    )}
+                                    
+                                    {resourceType === 'video' && resourceFilePreview && (
+                                        <div className="file-preview">
+                                            <video src={resourceFilePreview} controls width="100%" />
+                                        </div>
+                                    )}
+                                    
+                                    <div className="selected-file-info">
+                                        {resourceFile && (
+                                            <>
+                                                <div className="file-icon">
+                                                    {getResourceIcon(resourceType)}
+                                                </div>
+                                                <div className="file-details">
+                                                    <p><strong>File:</strong> {resourceFile.name}</p>
+                                                    <p><strong>Size:</strong> {Math.round(resourceFile.size / 1024)} KB</p>
+                                                    <p><strong>Type:</strong> {resourceType}</p>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                    
+                                    <button 
+                                        type="submit" 
+                                        className="upload-btn" 
+                                        disabled={uploadingResource || !selectedLectureForResource || !resourceFile}
+                                    >
+                                        <FaFileUpload /> {uploadingResource ? "Uploading..." : "Upload Resource"}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     )}
 

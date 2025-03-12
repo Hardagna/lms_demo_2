@@ -135,13 +135,57 @@ export const updateRole = async (req, res) => {
 
 export const deleteResource = async (req, res) => {
   try {
-    const resource = await Resource.findByIdAndDelete(req.params.id);
+    const resource = await Resource.findById(req.params.id);
     
     if (!resource) {
       return res.status(404).json({ message: 'Resource not found' });
     }
     
+    // If it's an uploaded file, delete it from the filesystem
+    if (resource.isUploadedFile && resource.url) {
+      try {
+        await promisify(fs.unlink)(resource.url);
+        console.log('Resource file deleted from filesystem');
+      } catch (fileError) {
+        console.log('Error deleting resource file:', fileError);
+      }
+    }
+    
+    await resource.deleteOne();
+    
     res.status(200).json({ message: 'Resource deleted successfully', resource });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+    console.log(error);
+  }
+};
+
+export const addResourceFile = async (req, res) => {
+  try {
+    const { lectureId } = req.params;
+    const { title, description, type } = req.body;
+    const file = req.file;
+    
+    const lecture = await Lecture.findById(lectureId);
+    
+    if (!lecture) {
+      return res.status(404).json({ message: "Lecture not found" });
+    }
+    
+    // Create resource with file path
+    const resource = await Resource.create({
+      title,
+      type,
+      url: file?.path, // Store file path in url field
+      description,
+      lecture: lectureId,
+      isUploadedFile: true // Flag to identify it's a local file
+    });
+    
+    res.status(201).json({ 
+      message: "Resource file uploaded successfully", 
+      resource 
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
     console.log(error);

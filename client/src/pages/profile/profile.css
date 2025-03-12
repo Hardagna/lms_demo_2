@@ -1,30 +1,42 @@
+@import url('../../styles/variables.css');
+
 .profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-xl);
+
+  .account-details {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin-top: 50px;
+    margin-top: var(--space-lg);
+    padding: var(--space-lg);
+    background-color: var(--background-light);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
 
-    @media (max-width: 768px) {
-        margin-top: 20px;
+    p {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--space-sm);
+      color: var(--text-dark);
+
+      strong {
+        font-weight: var(--font-weight-bold);
+      }
     }
+  }
+}
 
-    .account-details {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-top: 20px;
-
-        p{
-            font-size: 1.5rem;
-            font-weight: 500;
-            margin-bottom: 10px;
-
-            strong {
-                font-weight: 700;
-                /* color: #333; */
-            }
-        }
+@media (max-width: 768px) {
+  .profile {
+    margin-top: var(--space-lg);
+    
+    .account-details p {
+      font-size: var(--font-size-lg);
     }
+  }
 }

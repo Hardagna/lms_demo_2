@@ -1,6 +1,6 @@
 import express from 'express';
 import { isAuth, isAdmin } from '../middlewares/isAuth.js';
-import { createCourse, addLecture, deleteLecture, deleteCourse, updateRole, getAllUsers, getStats, deleteResource } from '../controllers/admin.js';
+import { createCourse, addLecture, deleteLecture, deleteCourse, updateRole, getAllUsers, getStats, deleteResource, addResourceFile } from '../controllers/admin.js';
 import { upload } from '../middlewares/multer.js';
 
 const router = express.Router();
@@ -12,6 +12,7 @@ router.delete('/course/delete-course/:id', isAuth, isAdmin, deleteCourse);
 router.get('/stats', isAuth, isAdmin, getStats);
 router.put('/user/:id', isAuth, isAdmin, updateRole);
 router.get('/users', isAuth, isAdmin, getAllUsers);
-router.delete('/resource/:id', isAuth, isAdmin, deleteResource); // Add this line
+router.delete('/resource/:id', isAuth, isAdmin, deleteResource);
+router.post('/resource/upload/:lectureId', isAuth, isAdmin, upload, addResourceFile); // Add this new route
 
 export default router;

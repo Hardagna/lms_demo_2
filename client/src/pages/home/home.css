@@ -1,57 +1,64 @@
+@import url('../../styles/variables.css');
+
 .home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: var(--background-grey);
+
+  .home-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
-    background-color: #f5f5f5;
+    width: 100%;
+    max-width: 500px;
+    padding: var(--space-lg);
+    background-color: var(--background-light);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-md);
 
-    .home-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        max-width: 500px;
-        padding: 20px;
-        background-color: #fff;
-        border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    h1 {
+      margin-bottom: var(--space-lg);
+      font-size: var(--font-size-xxl);
+      color: var(--text-dark);
 
-        h1 {
-            margin-bottom: 20px;
-            font-size: 24px;
-            color: #333;
-
-            @media (max-width: 768px) {
-                font-size: 20px;
-            }
-        }
-
-        p {
-            margin-bottom: 20px;
-            font-size: 16px;
-            color: #333;
-            text-align: center;
-
-            @media (max-width: 768px) {
-                font-size: 14px;
-            }
-        }
-
-        form {
-            width: 100%;
-
-            button {
-                width: 100%;
-                padding: 10px;
-                background-color: #333;
-                color: #fff;
-                border: none;
-                border-radius: 5px;
-                font-size: 16px;
-                cursor: pointer;
-            }
-        }
+      @media (max-width: 768px) {
+        font-size: var(--font-size-xl);
+      }
     }
+
+    p {
+      margin-bottom: var(--space-lg);
+      font-size: var(--font-size-md);
+      color: var(--text-dark);
+      text-align: center;
+
+      @media (max-width: 768px) {
+        font-size: var(--font-size-sm);
+      }
+    }
+
+    form {
+      width: 100%;
+
+      button {
+        width: 100%;
+        padding: var(--space-sm);
+        background-color: var(--primary-color);
+        color: var(--background-light);
+        border: none;
+        border-radius: var(--border-radius-md);
+        font-size: var(--font-size-md);
+        cursor: pointer;
+        transition: background-color 0.2s;
+
+        &:hover {
+          background-color: var(--primary-dark);
+        }
+      }
+    }
+  }
 }

@@ -1,18 +1,20 @@
+@import url('../../styles/variables.css');
+
 .main-content {
-    margin-left: 250px;
-    padding: 20px;
-    background-color: #f9f9f9;
-    min-height: 100vh;
-    transition: 0.5s;
+  margin-left: 250px;
+  padding: var(--space-lg);
+  background-color: var(--background-grey);
+  min-height: 100vh;
+  transition: 0.5s;
 
-    .box {
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  .box {
+    background-color: var(--background-light);
+    padding: var(--space-lg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
 
-        &:hover {
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-        }
+    &:hover {
+      box-shadow: var(--shadow-lg);
     }
+  }
 }
