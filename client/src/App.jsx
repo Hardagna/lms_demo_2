@@ -15,8 +15,7 @@ import Lecture from './pages/lecture/Lecture';
 import AdminDashboard from './admin/Dashboard/AdminDashboard';
 import AdminCourses from './admin/Courses/AdminCourses';
 import AdminUsers from './admin/Users/AdminUsers';
-// import Dashboard from './pages/dashboard/Dashboard';
-// import CourseSpace from './pages/courseSpace/CourseSpace';
+import AdminTeachingAssistants from './admin/TeachingAssistants/AdminTeachingAssistants';
 
 const App = () => {
 
@@ -34,13 +33,12 @@ const App = () => {
       <Route path="/register" element={ isAuth ? <Home />:<Register />} />
       <Route path="/verify" element={ isAuth ? <Home />:<Verify />} />
       <Route path="/courses/course/:id" element={isAuth ? <CourseDetails user = {user} />:<Login />} />
-      {/* <Route path="/courses/course/:id" element={isAuth ? <Dashboard user = {user} />:<Login />} /> */}
-      {/* <Route path="/courses/course//:id" element={isAuth ? <CourseSpace user = {user} />:<Login />} /> */}
       <Route path="/courses/course/lectures/:id" element={isAuth ? <Lecture user = {user} />:<Login />} />
 
       <Route path="/admin/dashboard" element={isAuth ? <AdminDashboard user = { user } />:<Login />} />
       <Route path="/admin/course/all" element={isAuth ? <AdminCourses user = { user } />:<Login />} />
       <Route path="/admin/users" element={isAuth ? <AdminUsers user = { user } />:<Login />} />
+      <Route path="/admin/teaching-assistants" element={isAuth ? <AdminTeachingAssistants user = { user } />:<Login />} />
 
     </Routes>
   </BrowserRouter>

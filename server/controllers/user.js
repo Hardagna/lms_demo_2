@@ -64,25 +64,66 @@ export const verifyUser = async (req, res) => {
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
 
+        // Validate required fields
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Please provide email and password",
+            });
+        }
+
+        // Find user with password explicitly included
+        const user = await User.findOne({ email }).select("+password");
+
+        // Check if user exists
         if (!user) {
-            return res.status(400).json({ message: 'User not found' });
+            return res.status(404).json({
+                message: "User not found",
+            });
         }
 
-        const mathPassword = await bcrypt.compare(password, user.password);
+        // Debug logging (remove in production)
+        console.log("Password from request:", password);
+        console.log("Stored hashed password exists:", !!user.password);
 
-        if (!mathPassword) {
-            return res.status(400).json({ message: 'Invalid password' });
+        // Make sure user.password exists before comparing
+        if (!user.password) {
+            return res.status(500).json({
+                message: "User password data is corrupted",
+            });
         }
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        // Compare passwords
+        const isMatch = await bcrypt.compare(password, user.password);
 
-        res.json({ message: 'Welcome back ${user.name}', token, user })
-    }
-    catch (error) {
-        res.status(500).json({ message: error.message });
-        console.log(error);
+        if (!isMatch) {
+            return res.status(401).json({
+                message: "Invalid password",
+            });
+        }
+
+        // Generate token and send response
+        const token = user.getJWTToken();
+
+        res.status(200).json({
+            message: "Login successful",
+            token,
+            user: {
+                _id: user._id,
+                username: user.username,
+                email: user.email,
+                avatar: user.avatar,
+                subscription: user.subscription,
+                role: user.role,
+                verified: user.verified,
+                teachingAssistantFor: user.teachingAssistantFor || [],
+            },
+        });
+    } catch (error) {
+        console.error("Login error:", error);
+        res.status(500).json({
+            message: error.message,
+        });
     }
 };
 

@@ -9,8 +9,11 @@ import { useParams } from 'react-router-dom';
 import { TiTick } from "react-icons/ti";
 import { FaSearch, FaFilePdf, FaYoutube, FaGlobe, FaWikipediaW, FaHeadphones, FaTrash, FaExternalLinkAlt } from "react-icons/fa";
 import { FaFileUpload, FaFile, FaFileImage, FaFileAudio, FaFileVideo, FaFileAlt } from 'react-icons/fa';
+import { CourseData } from '../../context/CourseContext';
+import TeachingAssistantsList from '../../components/TeachingAssistantsList';
 
 const Lecture = ({ user }) => {
+    const { teachingAssistants, fetchTeachingAssistants } = CourseData();
     // Existing state variables
     const [lectures, setLectures] = useState([]);
     const [lecture, setLecture] = useState({});
@@ -20,6 +23,7 @@ const Lecture = ({ user }) => {
     const [showDeleteForm, setShowDeleteForm] = useState(false);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    // Make video optional
     const [video, setVideo] = useState(null);
     const [videoPreview, setVideoPreview] = useState('');
     const [btnLoading, setBtnLoading] = useState(false);
@@ -51,12 +55,18 @@ const Lecture = ({ user }) => {
 
     async function getLectures() {
         try {
+            setLoading(true);
             const { data } = await axios.get(`${server}/api/courses/course/lectures/${params.id}`, {
                 headers: {
-                    token: localStorage.getItem("token"),
+                    token: localStorage.getItem('token')
                 }
             });
             setLectures(data.lectures);
+            if (data.lectures.length > 0) {
+                setLecture(data.lectures[0]);
+                // Get resources for the first lecture
+                getLectureResources(data.lectures[0]._id);
+            }
             setLoading(false);
         } catch (error) {
             console.log(error);
@@ -65,15 +75,16 @@ const Lecture = ({ user }) => {
     }
 
     async function getLecture(id) {
-        setLecLoading(true);
         try {
+            setLecLoading(true);
             const { data } = await axios.get(`${server}/api/courses/course/lecture/${id}`, {
                 headers: {
-                    token: localStorage.getItem("token"),
+                    token: localStorage.getItem('token')
                 }
             });
             setLecture(data.lecture);
-            console.log("Lecture data", data.lecture);
+            // Get resources for the selected lecture
+            getLectureResources(id);
             setLecLoading(false);
         } catch (error) {
             console.log(error);
@@ -81,81 +92,91 @@ const Lecture = ({ user }) => {
         }
     }
 
+    // Modified submitHandler to make video optional
     const submitHandler = async (e) => {
         e.preventDefault();
-        setBtnLoading(true);
-
-        const formData = new FormData();
-        formData.append("title", title);
-        formData.append("description", description);
-        formData.append("file", video);
-
         try {
-            const { data } = await axios.post(`${server}/api/admin/course/add-lecture/${params.id}`, formData, {
+            setBtnLoading(true);
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', description);
+            if (video) {
+                formData.append('image', video);
+            }
+
+            await axios.post(`${server}/api/admin/course/add-lecture/${params.id}`, formData, {
                 headers: {
-                    token: localStorage.getItem("token"),
+                    token: localStorage.getItem('token')
                 }
             });
-
-            toast.success(data.message);
-            setBtnLoading(false);
-            setShowAddForm(false);
-            getLectures();
+            
+            // Reset form and refresh lectures
             setTitle('');
             setDescription('');
-            setVideo('');
+            setVideo(null);
             setVideoPreview('');
+            setShowAddForm(false);
+            getLectures();
+            setBtnLoading(false);
         } catch (error) {
-            toast.error(error.response.data.message);
+            console.log(error);
             setBtnLoading(false);
         }
     };
 
     const deleteLectureHandler = async (id) => {
         try {
-            const { data } = await axios.delete(`${server}/api/admin/course/delete-lecture/${id}`, {
+            setBtnLoading(true);
+            await axios.delete(`${server}/api/admin/course/delete-lecture/${id}`, {
                 headers: {
-                    token: localStorage.getItem("token"),
+                    token: localStorage.getItem('token')
                 }
             });
-            toast.success(data.message);
+            
             getLectures();
+            setBtnLoading(false);
         } catch (error) {
-            toast.error(error.response.data.message);
+            console.log(error);
+            setBtnLoading(false);
         }
     };
 
+    // Existing changeVideoHandler can remain the same
     const changeVideoHandler = (e) => {
         const file = e.target.files[0];
-        const reader = new FileReader();
+        setVideo(file);
         
-        reader.onloadend = () => {
-            setVideo(file);
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
             setVideoPreview(reader.result);
         };
-        reader.readAsDataURL(file);
-        
     };
 
     async function getProgress() {
         try {
-            const { data } = await axios.get(`${server}/api/user/progress?course=${params.id}`, {
-                headers: { token: localStorage.getItem("token") }
+            const { data } = await axios.get(`${server}/api/courses/course/progress?course=${params.id}`, {
+                headers: {
+                    token: localStorage.getItem('token')
+                }
             });
-            setProgress(data);
-            setCompleted(data.progressPercentage);
-            setCompletedLecture(data.completedLectures);
+            
+            setCompleted(data.completedLectures);
             setLecLength(data.allLectures);
+            setProgress(data.progressPercentage);
         } catch (error) {
             console.log(error);
         }
-    };
+    }
 
     const addProgress = async (id) => {
         try {
-            await axios.post(`${server}/api/user/progress?course=${params.id}&lectureId=${id}`, {}, {
-                headers: { token: localStorage.getItem("token") }
+            await axios.post(`${server}/api/courses/course/progress?course=${params.id}&lectureId=${id}`, {}, {
+                headers: {
+                    token: localStorage.getItem('token')
+                }
             });
+            
             getProgress();
         } catch (error) {
             console.log(error);
@@ -165,105 +186,84 @@ const Lecture = ({ user }) => {
     // Function to search for resources
     const searchResourcesHandler = async (e) => {
         e.preventDefault();
-        if (!resourceQuery) {
-            toast.error('Please enter a search query');
-            return;
-        }
-        
-        setSearching(true);
         try {
-            const { data } = await axios.get(
-                `${server}/api/resources/search?query=${resourceQuery}&type=${resourceType}`,
-                {
-                    headers: {
-                        token: localStorage.getItem("token"),
-                    }
+            setSearching(true);
+            const { data } = await axios.get(`${server}/api/resources/search?query=${resourceQuery}&type=${resourceType}`, {
+                headers: {
+                    token: localStorage.getItem('token')
                 }
-            );
+            });
             
             setSearchResults(data.results);
             setSearching(false);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Error searching resources');
+            console.log(error);
             setSearching(false);
+            setSearchResults([]);
         }
     };
 
     // Function to add a resource to the selected lecture
     const addResourceHandler = async (resource) => {
-        // Check if a lecture is selected for adding resources
-        if (!selectedLectureForResource) {
-            toast.error('Please select a lecture to add resources to');
-            return;
-        }
-        
         try {
-            const { data } = await axios.post(
-                `${server}/api/resources/add/${selectedLectureForResource}`,
-                {
-                    title: resource.title,
-                    type: resource.type,
-                    url: resource.url,
-                    description: resource.description || ''
-                },
-                {
-                    headers: {
-                        token: localStorage.getItem("token"),
-                    }
+            const lectureId = selectedLectureForResource || lecture._id;
+            
+            await axios.post(`${server}/api/resources/add/${lectureId}`, {
+                title: resource.title,
+                type: resource.type,
+                url: resource.url,
+                description: resource.description
+            }, {
+                headers: {
+                    token: localStorage.getItem('token')
                 }
-            );
+            });
             
-            toast.success('Resource added successfully');
+            // Refresh resources
+            getLectureResources(lectureId);
             
-            // If the current active lecture is the same as the one resources are being added to,
-            // refresh the resources list
-            if (lecture._id === selectedLectureForResource) {
-                getLectureResources();
-            }
+            // Close search panel
+            setShowResourceSearch(false);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Error adding resource');
+            console.log(error);
         }
     };
 
     // Function to get resources for the current lecture
-    const getLectureResources = async () => {
-        if (!lecture?._id) return;
-        
-        setLoadingResources(true);
+    const getLectureResources = async (lectureId) => {
         try {
-            const { data } = await axios.get(
-                `${server}/api/resources/lecture/${lecture._id}`,
-                {
-                    headers: {
-                        token: localStorage.getItem("token"),
-                    }
+            setLoadingResources(true);
+            const { data } = await axios.get(`${server}/api/resources/lecture/${lectureId}`, {
+                headers: {
+                    token: localStorage.getItem('token')
                 }
-            );
+            });
             
             setResources(data.resources);
             setLoadingResources(false);
         } catch (error) {
-            console.log('Error fetching resources:', error);
+            console.log(error);
             setLoadingResources(false);
+            setResources([]);
         }
     };
 
     // Function to delete a resource
     const deleteResourceHandler = async (resourceId) => {
         try {
-            const { data } = await axios.delete(
-                `${server}/api/resources/${resourceId}`,
-                {
-                    headers: {
-                        token: localStorage.getItem("token"),
-                    }
+            setBtnLoading(true);
+            await axios.delete(`${server}/api/admin/resource/${resourceId}`, {
+                headers: {
+                    token: localStorage.getItem('token')
                 }
-            );
+            });
             
-            toast.success('Resource deleted successfully');
-            getLectureResources();
+            // Refresh resources
+            getLectureResources(lecture._id);
+            setBtnLoading(false);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Error deleting resource');
+            console.log(error);
+            setBtnLoading(false);
         }
     };
 
@@ -271,69 +271,46 @@ const Lecture = ({ user }) => {
     const getResourceIcon = (type) => {
         switch (type) {
             case 'pdf':
-                return <FaFilePdf />;
+                return <i className="fas fa-file-pdf resource-icon resource-icon-pdf"></i>;
             case 'video':
-                return <FaYoutube />;
+                return <i className="fas fa-video resource-icon resource-icon-video"></i>;
             case 'webpage':
-                return <FaGlobe />;
+                return <i className="fas fa-globe resource-icon resource-icon-webpage"></i>;
             case 'wikipedia':
-                return <FaWikipediaW />;
+                return <i className="fas fa-book resource-icon resource-icon-wikipedia"></i>;
             case 'audio':
-                return <FaHeadphones />;
-            case 'image':
-                return <FaFileImage />;
+                return <i className="fas fa-headphones resource-icon resource-icon-audio"></i>;
             case 'document':
-                return <FaFileAlt />;
+                return <i className="fas fa-file-alt resource-icon resource-icon-document"></i>;
+            case 'image':
+                return <i className="fas fa-image resource-icon resource-icon-image"></i>;
             default:
-                return <FaFile />;
+                return <i className="fas fa-link resource-icon"></i>;
         }
     };
 
     // Helper function to truncate URLs for display
     const truncateUrl = (url) => {
-        try {
-            const urlObj = new URL(url);
-            return `${urlObj.hostname}${urlObj.pathname.substring(0, 15)}${urlObj.pathname.length > 15 ? '...' : ''}`;
-        } catch (e) {
-            return url.substring(0, 30) + (url.length > 30 ? '...' : '');
+        if (!url) return '';
+        if (url.length > 40) {
+            return url.substring(0, 37) + '...';
         }
-    }
+        return url;
+    };
 
     // Handle resource file change
     const handleResourceFileChange = (e) => {
         const file = e.target.files[0];
-        if (!file) return;
-        
         setResourceFile(file);
         
-        // Update resource type based on file extension
-        const fileExtension = file.name.split('.').pop().toLowerCase();
-        
-        // Set resource type based on file extension
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension)) {
-            setResourceType('image');
-            // Create preview for image files
+        // Create preview for certain file types
+        if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.readAsDataURL(file);
+            reader.onload = () => {
                 setResourceFilePreview(reader.result);
             };
-            reader.readAsDataURL(file);
-        } else if (['pdf'].includes(fileExtension)) {
-            setResourceType('pdf');
-            setResourceFilePreview('');
-        } else if (['mp4', 'webm', 'ogg', 'mov'].includes(fileExtension)) {
-            setResourceType('video');
-            // Create preview for video files
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setResourceFilePreview(reader.result);
-            };
-            reader.readAsDataURL(file);
-        } else if (['mp3', 'wav', 'ogg'].includes(fileExtension)) {
-            setResourceType('audio');
-            setResourceFilePreview('');
         } else {
-            setResourceType('document');
             setResourceFilePreview('');
         }
     };
@@ -342,449 +319,560 @@ const Lecture = ({ user }) => {
     const uploadResourceHandler = async (e) => {
         e.preventDefault();
         
-        if (!selectedLectureForResource) {
-            toast.error('Please select a lecture to add resources to');
-            return;
-        }
-        
         if (!resourceFile) {
-            toast.error('Please select a file to upload');
+            alert('Please select a file to upload');
             return;
         }
-        
-        setUploadingResource(true);
-        
-        const formData = new FormData();
-        formData.append('title', resourceTitle);
-        formData.append('description', resourceDescription);
-        formData.append('type', resourceType);
-        formData.append('file', resourceFile);
         
         try {
-            const { data } = await axios.post(
-                `${server}/api/admin/resource/upload/${selectedLectureForResource}`,
-                formData,
-                {
-                    headers: {
-                        token: localStorage.getItem("token"),
-                    }
-                }
-            );
+            setUploadingResource(true);
             
-            toast.success('Resource uploaded successfully');
+            const formData = new FormData();
+            formData.append('title', resourceTitle);
+            formData.append('description', resourceDescription);
+            formData.append('image', resourceFile); // Using 'image' as the field name to match the server's multer setup
+            
+            // Determine resource type based on file type
+            let type = 'document';
+            if (resourceFile.type.startsWith('image/')) {
+                type = 'image';
+            } else if (resourceFile.type.startsWith('video/')) {
+                type = 'video';
+            } else if (resourceFile.type.startsWith('audio/')) {
+                type = 'audio';
+            } else if (resourceFile.type === 'application/pdf') {
+                type = 'pdf';
+            }
+            
+            formData.append('type', type);
+            
+            const lectureId = selectedLectureForResource || lecture._id;
+            
+            await axios.post(`${server}/api/admin/resource/upload/${lectureId}`, formData, {
+                headers: {
+                    token: localStorage.getItem('token'),
+                    'Content-Type': 'multipart/form-data',
+                }
+            });
             
             // Reset form
             setResourceTitle('');
             setResourceDescription('');
             setResourceFile(null);
             setResourceFilePreview('');
+            setShowUploadResource(false);
             
-            // If the current active lecture is the same as the one resources are being added to,
-            // refresh the resources list
-            if (lecture._id === selectedLectureForResource) {
-                getLectureResources();
-            }
+            // Refresh resources
+            getLectureResources(lectureId);
             
             setUploadingResource(false);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Error uploading resource');
+            console.log(error);
             setUploadingResource(false);
         }
     };
 
     // Render resource link appropriately (external URL vs local file)
     const renderResourceLink = (resource) => {
+        // For uploaded files
         if (resource.isUploadedFile) {
-            return `${server}/${resource.url}`;
+            return (
+                <a 
+                    href={`${server}/${resource.url}`} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="preview-link"
+                >
+                    <i className="fas fa-external-link-alt"></i> View File
+                </a>
+            );
         }
-        return resource.url;
+        
+        // For external resources
+        return (
+            <a 
+                href={resource.url} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="preview-link"
+            >
+                <i className="fas fa-external-link-alt"></i> Visit Resource
+            </a>
+        );
     };
 
-    // Update useEffect to fetch resources when lecture changes
+    // Fetch lectures when component mounts
     useEffect(() => {
         getLectures();
-        getProgress();
-        
-        if (lecture?._id) {
-            getLectureResources();
-            
-            // If no lecture is selected for resources yet, select the current one
-            if (!selectedLectureForResource) {
-                setSelectedLectureForResource(lecture._id);
-            }
+        if (user?.role !== 'admin') {
+            getProgress();
         }
-    }, [lecture]);
+    }, [params.id, user?.role]);
+
+    // Fetch the course teaching assistants when component mounts
+    useEffect(() => {
+        if (params.id) {
+            fetchTeachingAssistants(params.id);
+        }
+    }, [params.id]);
 
     return (
-        <>
-            <div className="progress">
-                <div className="progress-bar" style={{ width: `${completed}%` }}></div>
-                <div className="progress-text">
-                    <span>Lectures completed: {completedLecture} out of {lecLength}</span>
-                    <span>{completed}% complete</span>
-                </div>
-            </div>
-
-            <div className="lec-page">
-                <div className="left">
-                    {lecture?.video ? (
-                        <>
-                            <video
-                                src={`${server}/${lecture.video}`}
-                                width={"100%"}
-                                controls
-                                controlsList="nodownload noremoteplayback"
-                                disablePictureInPicture
-                                disableRemotePlayback
-                                autoPlay
-                                type="video/mp4"
-                                onEnded={() => addProgress(lecture._id)}
-                            />
-                            <h1>{lecture.title}</h1>
-                            <h3>{lecture.description}</h3>
-
-                            {/* Resources display section - only shows resources, not search */}
-                            <div className="resources-section">
-                                <h2>Resources</h2>
-                                
-                                {/* Display added resources */}
-                                <div className="added-resources">
-                                    {loadingResources ? (
-                                        <p>Loading resources...</p>
-                                    ) : resources.length > 0 ? (
-                                        <ul className="resources-list">
-                                            {resources.map((resource) => (
-                                                <li key={resource._id} className="resource-item">
-                                                    <a 
-                                                        href={renderResourceLink(resource)} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer"
-                                                        className="resource-link"
-                                                        download={resource.isUploadedFile}
-                                                    >
-                                                        <span className={`resource-icon resource-icon-${resource.type}`}>
-                                                            {getResourceIcon(resource.type)}
-                                                        </span>
-                                                        <div>
-                                                            <h4>{resource.title}</h4>
-                                                            <p>{resource.description}</p>
-                                                            {resource.isUploadedFile && (
-                                                                <small className="uploaded-file-label">Uploaded file</small>
-                                                            )}
-                                                        </div>
-                                                    </a>
-                                                    {user?.role === "admin" && (
-                                                        <button 
-                                                            className="delete-resource-btn" 
-                                                            onClick={() => deleteResourceHandler(resource._id)}
-                                                        >
-                                                            <FaTrash />
-                                                        </button>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p>No resources available for this lecture.</p>
-                                    )}
-                                </div>
+        <div className="lec-page">
+            {loading ? (
+                <div>Loading...</div>
+            ) : (
+                <div className="lec-content">
+                    {/* Lecture List */}
+                    <div className="left">
+                        <h3>Lectures</h3>
+                        {lectures.length > 0 ? (
+                            <div className="lectures-list">
+                                {lectures.map((item) => (
+                                    <div 
+                                        key={item._id} 
+                                        className={`lecture-item ${lecture._id === item._id ? 'active' : ''}`}
+                                    >
+                                        <div 
+                                            className="lec-no" 
+                                            onClick={() => getLecture(item._id)}
+                                        >
+                                            {item.title}
+                                        </div>
+                                        {user?.role === 'admin' && (
+                                            <button 
+                                                className="delete-btn" 
+                                                onClick={() => deleteLectureHandler(item._id)}
+                                                disabled={btnLoading}
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
-                        </>
-                    ) : (
-                        <h1>Choose a lecture</h1>
-                    )}
-                </div>
-
-                <div className="right">
-                    {/* Admin controls section */}
-                    {user?.role === "admin" && (
-                        <div className="admin-controls">
-                            {/* OPTION 1: Choose video from system */}
-                            <button 
-                                className={`commonBtn ${showAddForm ? 'active-btn' : ''}`} 
-                                onClick={() => {
-                                    setShowAddForm(!showAddForm);
-                                    if (showResourceSearch) setShowResourceSearch(false);
-                                    if (showUploadResource) setShowUploadResource(false);
-                                }}
-                            >
-                                {showAddForm ? "Close Add Form" : "Add Lecture"}
-                            </button>
-                            
-                            {/* OPTION 2: Search online resources */}
-                            <button 
-                                className={`commonBtn resource-btn ${showResourceSearch ? 'active-btn' : ''}`} 
-                                onClick={() => {
-                                    setShowResourceSearch(!showResourceSearch);
-                                    if (showAddForm) setShowAddForm(false);
-                                    if (showUploadResource) setShowUploadResource(false);
-                                }}
-                            >
-                                {showResourceSearch ? "Hide Resource Search" : "Find Online Resources"}
-                            </button>
-
-                            {/* OPTION 3: Upload resources from system */}
-                            <button 
-                                className={`commonBtn upload-resource-btn ${showUploadResource ? 'active-btn' : ''}`} 
-                                onClick={() => {
-                                    setShowUploadResource(!showUploadResource);
-                                    if (showAddForm) setShowAddForm(false);
-                                    if (showResourceSearch) setShowResourceSearch(false);
-                                }}
-                            >
-                                {showUploadResource ? "Hide Upload Form" : "Upload Resource"}
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Add lecture form - OPTION 1 */}
-                    {showAddForm && (
-                        <div className="lec-form">
-                            <h3>Upload Video Lecture</h3>
-                            <form onSubmit={submitHandler}>
-                                <label htmlFor="title">Title</label>
-                                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
-
-                                <label htmlFor="description">Description</label>
-                                <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} required />
-
-                                <label htmlFor="video">Choose Video From System</label>
-                                <input type="file" onChange={changeVideoHandler} required />
-
-                                {videoPreview && <video src={videoPreview} width={300} controls />}
-
-                                <button type="submit" className="commonBtn" disabled={btnLoading}>
-                                    {btnLoading ? "Uploading..." : "Add"}
-                                </button>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* Online Resource Search - OPTION 2 */}
-                    {showResourceSearch && (
-                        <div className="resource-search-form">
-                            <h3>Find Online Resources</h3>
-                            
-                            {/* Lecture selector dropdown */}
-                            <div className="lecture-selector">
-                                <label htmlFor="lectureSelector">Add resources to:</label>
-                                <select 
-                                    id="lectureSelector"
-                                    value={selectedLectureForResource} 
-                                    onChange={(e) => setSelectedLectureForResource(e.target.value)}
+                        ) : (
+                            <p>No lectures available</p>
+                        )}
+                        
+                        {/* Admin Controls */}
+                        {user?.role === 'admin' && (
+                            <div className="admin-controls">
+                                <button 
+                                    className={`commonBtn ${showAddForm ? 'active-btn' : ''}`} 
+                                    onClick={() => {
+                                        setShowAddForm(!showAddForm);
+                                        setShowDeleteForm(false);
+                                        setShowResourceSearch(false);
+                                        setShowUploadResource(false);
+                                    }}
                                 >
-                                    <option value="">Select a lecture</option>
-                                    {lectures.map(lec => (
-                                        <option key={lec._id} value={lec._id}>
-                                            {lec.title}
-                                        </option>
-                                    ))}
-                                </select>
+                                    Add Lecture
+                                </button>
+                                <button 
+                                    className={`commonBtn ${showResourceSearch ? 'active-btn' : ''}`} 
+                                    onClick={() => {
+                                        setShowResourceSearch(!showResourceSearch);
+                                        setShowAddForm(false);
+                                        setShowDeleteForm(false);
+                                        setShowUploadResource(false);
+                                    }}
+                                >
+                                    Online Resources
+                                </button>
+                                <button 
+                                    className={`commonBtn ${showUploadResource ? 'active-btn' : ''}`} 
+                                    onClick={() => {
+                                        setShowUploadResource(!showUploadResource);
+                                        setShowAddForm(false);
+                                        setShowDeleteForm(false);
+                                        setShowResourceSearch(false);
+                                    }}
+                                >
+                                    Upload Resource
+                                </button>
                             </div>
-
-                            <form onSubmit={searchResourcesHandler}>
-                                <div className="search-input-container">
+                        )}
+                        
+                        {/* Add Lecture Form */}
+                        {showAddForm && (
+                            <div className="lec-form">
+                                <h3>Add New Lecture</h3>
+                                <form onSubmit={submitHandler}>
+                                    <label htmlFor="title">Title</label>
                                     <input 
                                         type="text" 
-                                        placeholder="Search for resources..." 
-                                        value={resourceQuery} 
-                                        onChange={(e) => setResourceQuery(e.target.value)}
+                                        id="title"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        required
                                     />
-                                    <select 
-                                        value={resourceType} 
-                                        onChange={(e) => setResourceType(e.target.value)}
+                                    
+                                    <label htmlFor="description">Description</label>
+                                    <textarea 
+                                        id="description"
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                        required
+                                    ></textarea>
+                                    
+                                    <label htmlFor="video">Video (Optional)</label>
+                                    <input 
+                                        type="file" 
+                                        id="video"
+                                        accept="video/*"
+                                        onChange={changeVideoHandler}
+                                    />
+                                    
+                                    {videoPreview && (
+                                        <video 
+                                            src={videoPreview}
+                                            controls
+                                            style={{ maxWidth: '100%', marginTop: '10px' }}
+                                        ></video>
+                                    )}
+                                    
+                                    <button 
+                                        type="submit"
+                                        className="commonBtn"
+                                        disabled={btnLoading}
                                     >
-                                        <option value="all">All Types</option>
-                                        <option value="pdf">PDFs</option>
-                                        <option value="video">Videos</option>
-                                        <option value="webpage">Webpages</option>
-                                        <option value="wikipedia">Wikipedia</option>
-                                        <option value="audio">Audio</option>
-                                    </select>
-                                    <button type="submit" className="search-btn" disabled={searching}>
-                                        <FaSearch /> {searching ? "Searching..." : "Search"}
+                                        {btnLoading ? 'Adding...' : 'Add Lecture'}
                                     </button>
+                                </form>
+                            </div>
+                        )}
+                        
+                        {/* Search Resources Form */}
+                        {showResourceSearch && (
+                            <div className="resource-search-form">
+                                <h3>Search Online Resources</h3>
+                                
+                                <div className="lecture-selector">
+                                    <label htmlFor="selectLecture">Select Lecture</label>
+                                    <select
+                                        id="selectLecture"
+                                        value={selectedLectureForResource || lecture._id || ''}
+                                        onChange={(e) => setSelectedLectureForResource(e.target.value)}
+                                    >
+                                        {lectures.map((lec) => (
+                                            <option key={lec._id} value={lec._id}>
+                                                {lec.title}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                            </form>
-
-                            <div className="search-results">
+                                
+                                <form onSubmit={searchResourcesHandler}>
+                                    <div className="search-input-container">
+                                        <input
+                                            type="text"
+                                            placeholder="Search for learning resources..."
+                                            value={resourceQuery}
+                                            onChange={(e) => setResourceQuery(e.target.value)}
+                                            required
+                                        />
+                                        
+                                        <select
+                                            value={resourceType}
+                                            onChange={(e) => setResourceType(e.target.value)}
+                                        >
+                                            <option value="all">All Types</option>
+                                            <option value="pdf">PDF Documents</option>
+                                            <option value="video">Videos</option>
+                                            <option value="webpage">Web Pages</option>
+                                            <option value="wikipedia">Wikipedia</option>
+                                            <option value="audio">Audio</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <button
+                                        type="submit"
+                                        className="search-btn"
+                                        disabled={searching || !resourceQuery}
+                                    >
+                                        {searching ? (
+                                            <>
+                                                <i className="fas fa-circle-notch fa-spin"></i>
+                                                Searching...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="fas fa-search"></i>
+                                                Search
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                                
+                                {/* Search Results */}
                                 {searching ? (
                                     <div className="searching-indicator">
                                         <div className="spinner"></div>
-                                        <p>Searching the web for resources...</p>
+                                        <p>Searching for resources...</p>
                                     </div>
-                                ) : searchResults.length > 0 ? (
-                                    <ul className="resource-results-list">
-                                        {searchResults.map((result, index) => (
-                                            <li key={index} className="resource-result-item">
-                                                <div className="resource-result-info">
-                                                    <span className={`resource-icon resource-icon-${result.type}`}>
-                                                        {getResourceIcon(result.type)}
-                                                    </span>
-                                                    <div className="resource-details">
-                                                        <h4>{result.title}</h4>
-                                                        <p dangerouslySetInnerHTML={{ __html: result.description }} />
-                                                        <div className="resource-url">
-                                                            <a 
-                                                                href={result.url} 
-                                                                target="_blank" 
-                                                                rel="noopener noreferrer"
-                                                                className="preview-link"
-                                                            >
-                                                                Preview <FaExternalLinkAlt />
-                                                            </a>
-                                                            <small>{truncateUrl(result.url)}</small>
-                                                        </div>
-                                                        {result.thumbnail && (
-                                                            <div className="resource-thumbnail">
-                                                                <img src={result.thumbnail} alt={result.title} />
+                                ) : (
+                                    <>
+                                        {searchResults.length > 0 ? (
+                                            <ul className="resource-results-list">
+                                                {searchResults.map((resource, index) => (
+                                                    <li key={index} className="resource-result-item">
+                                                        <div className="resource-result-info">
+                                                            <div className={`resource-icon resource-icon-${resource.type}`}>
+                                                                {getResourceIcon(resource.type)}
                                                             </div>
-                                                        )}
-                                                    </div>
+                                                            
+                                                            <div className="resource-details">
+                                                                <h4>{resource.title}</h4>
+                                                                <p>{resource.description}</p>
+                                                                
+                                                                <div className="resource-url">
+                                                                    <span>{truncateUrl(resource.url)}</span>
+                                                                    <a
+                                                                        href={resource.url}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="preview-link"
+                                                                    >
+                                                                        <i className="fas fa-external-link-alt"></i> Preview
+                                                                    </a>
+                                                                </div>
+                                                                
+                                                                {resource.thumbnail && (
+                                                                    <div className="resource-thumbnail">
+                                                                        <img src={resource.thumbnail} alt={resource.title} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <button
+                                                            className="add-resource-btn"
+                                                            onClick={() => addResourceHandler(resource)}
+                                                        >
+                                                            <i className="fas fa-plus"></i> Add
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            searchResults === null || (resourceQuery && searchResults.length === 0) ? (
+                                                <div className="no-results">
+                                                    <p>No resources found. Try a different search term.</p>
                                                 </div>
-                                                <button 
-                                                    className="commonBtn add-resource-btn" 
-                                                    onClick={() => addResourceHandler(result)}
-                                                    disabled={!selectedLectureForResource}
-                                                >
-                                                    Add to Lecture
-                                                </button>
-                                            </li>
+                                            ) : null
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* Upload Resource Form */}
+                        {showUploadResource && (
+                            <div className="resource-upload-form">
+                                <h3>Upload Resource File</h3>
+                                
+                                <div className="lecture-selector">
+                                    <label htmlFor="uploadLectureSelect">Select Lecture</label>
+                                    <select
+                                        id="uploadLectureSelect"
+                                        value={selectedLectureForResource || lecture._id || ''}
+                                        onChange={(e) => setSelectedLectureForResource(e.target.value)}
+                                    >
+                                        {lectures.map((lec) => (
+                                            <option key={lec._id} value={lec._id}>
+                                                {lec.title}
+                                            </option>
                                         ))}
-                                    </ul>
-                                ) : resourceQuery ? (
-                                    <div className="no-results">
-                                        <p>No resources found. Try a different search term or resource type.</p>
-                                    </div>
-                                ) : null}
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Upload Resource from System - OPTION 3 */}
-                    {showUploadResource && (
-                        <div className="resource-upload-form">
-                            <h3>Upload Resource File</h3>
-                            
-                            {/* Lecture selector dropdown */}
-                            <div className="lecture-selector">
-                                <label htmlFor="lectureSelector">Add resource to:</label>
-                                <select 
-                                    id="lectureSelector"
-                                    value={selectedLectureForResource} 
-                                    onChange={(e) => setSelectedLectureForResource(e.target.value)}
-                                >
-                                    <option value="">Select a lecture</option>
-                                    {lectures.map(lec => (
-                                        <option key={lec._id} value={lec._id}>
-                                            {lec.title}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <form onSubmit={uploadResourceHandler}>
-                                <div className="resource-upload-container">
-                                    <label htmlFor="resourceTitle">Resource Title</label>
-                                    <input 
-                                        type="text" 
+                                    </select>
+                                </div>
+                                
+                                <form onSubmit={uploadResourceHandler} className="resource-upload-container">
+                                    <label htmlFor="resourceTitle">Title</label>
+                                    <input
+                                        type="text"
                                         id="resourceTitle"
-                                        placeholder="Enter resource title" 
-                                        value={resourceTitle} 
+                                        value={resourceTitle}
                                         onChange={(e) => setResourceTitle(e.target.value)}
                                         required
                                     />
                                     
-                                    <label htmlFor="resourceDescription">Description (optional)</label>
-                                    <textarea 
+                                    <label htmlFor="resourceDescription">Description</label>
+                                    <textarea
                                         id="resourceDescription"
-                                        placeholder="Enter resource description" 
-                                        value={resourceDescription} 
+                                        value={resourceDescription}
                                         onChange={(e) => setResourceDescription(e.target.value)}
                                     ></textarea>
                                     
-                                    <label htmlFor="resourceFile">Choose File</label>
-                                    <input 
-                                        type="file" 
+                                    <label htmlFor="resourceFile">File</label>
+                                    <input
+                                        type="file"
                                         id="resourceFile"
                                         onChange={handleResourceFileChange}
                                         required
                                     />
                                     
-                                    {resourceType === 'image' && resourceFilePreview && (
+                                    {resourceFile && (
+                                        <div className="selected-file-info">
+                                            <div className="file-icon">
+                                                <i className="fas fa-file"></i>
+                                            </div>
+                                            <div className="file-details">
+                                                <p><strong>{resourceFile.name}</strong></p>
+                                                <p>Size: {Math.round(resourceFile.size / 1024)} KB</p>
+                                                <p>Type: {resourceFile.type || 'Unknown'}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {resourceFilePreview && resourceFile?.type.startsWith('image/') && (
                                         <div className="file-preview">
                                             <img src={resourceFilePreview} alt="Preview" />
                                         </div>
                                     )}
                                     
-                                    {resourceType === 'video' && resourceFilePreview && (
+                                    {resourceFilePreview && resourceFile?.type.startsWith('video/') && (
                                         <div className="file-preview">
-                                            <video src={resourceFilePreview} controls width="100%" />
+                                            <video src={resourceFilePreview} controls></video>
                                         </div>
                                     )}
                                     
-                                    <div className="selected-file-info">
-                                        {resourceFile && (
+                                    <button
+                                        type="submit"
+                                        className="upload-btn upload-resource-btn"
+                                        disabled={uploadingResource || !resourceFile}
+                                    >
+                                        {uploadingResource ? (
                                             <>
-                                                <div className="file-icon">
-                                                    {getResourceIcon(resourceType)}
-                                                </div>
-                                                <div className="file-details">
-                                                    <p><strong>File:</strong> {resourceFile.name}</p>
-                                                    <p><strong>Size:</strong> {Math.round(resourceFile.size / 1024)} KB</p>
-                                                    <p><strong>Type:</strong> {resourceType}</p>
-                                                </div>
+                                                <i className="fas fa-circle-notch fa-spin"></i>
+                                                Uploading...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="fas fa-upload"></i>
+                                                Upload Resource
                                             </>
                                         )}
-                                    </div>
-                                    
-                                    <button 
-                                        type="submit" 
-                                        className="upload-btn" 
-                                        disabled={uploadingResource || !selectedLectureForResource || !resourceFile}
-                                    >
-                                        <FaFileUpload /> {uploadingResource ? "Uploading..." : "Upload Resource"}
                                     </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* Lectures list - always visible */}
-                    <div className="lectures-list">
-                        <h3>Available Lectures</h3>
-                        {lectures?.length > 0 ? (
-                            lectures.map((e, i) => (
-                                <div key={e._id} className="lecture-item">
-                                    <div
-                                        onClick={() => getLecture(e._id)}
-                                        className={`lec-no ${lecture?._id === e._id ? "active" : ""}`}
-                                    >
-                                        {i + 1}. {e.title} {
-                                            progress && progress[0]?.completedLectures?.includes(e._id) && <span style={{ color: "green" }}>
-                                                <TiTick />
-                                            </span>
-                                        }
-                                    </div>
-
-                                    {user?.role === "admin" && (
-                                        <button
-                                            className="commonBtn delete-btn"
-                                            onClick={() => deleteLectureHandler(e._id)}
-                                        >
-                                            Delete
-                                        </button>
-                                    )}
-                                </div>
-                            ))
+                                </form>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Lecture Content */}
+                    <div className="right">
+                        {lecLoading ? (
+                            <div>Loading lecture...</div>
                         ) : (
-                            <p>No lectures found</p>
+                            <>
+                                {lecture?.title ? (
+                                    <div className="lecture-container">
+                                        <h2>{lecture.title}</h2>
+                                        
+                                        {user?.role !== 'admin' && (
+                                            <div className="progress" style={{ width: '100%', height: '5px', backgroundColor: '#f5f5f5', borderRadius: '3px', marginBottom: '20px' }}>
+                                                <div 
+                                                    style={{ 
+                                                        width: `${progress}%`, 
+                                                        backgroundColor: '#4caf50', 
+                                                        height: '100%',
+                                                        borderRadius: '3px'
+                                                    }}
+                                                ></div>
+                                            </div>
+                                        )}
+                                        
+                                        {lecture.video && (
+                                            <video 
+                                                src={`${server}/${lecture.video}`}
+                                                controls
+                                                style={{ maxWidth: '100%', marginBottom: '15px' }}
+                                            ></video>
+                                        )}
+                                        
+                                        <p>{lecture.description}</p>
+                                        
+                                        {/* Lecture Resources Section */}
+                                        <div className="resources-section">
+                                            <div className="resources-header">
+                                                <h3>Resources</h3>
+                                            </div>
+                                            
+                                            {loadingResources ? (
+                                                <div className="searching-indicator">
+                                                    <div className="spinner"></div>
+                                                    <p>Loading resources...</p>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    {resources.length > 0 ? (
+                                                        <ul className="resources-list">
+                                                            {resources.map((resource) => (
+                                                                <li key={resource._id} className="resource-item">
+                                                                    <a 
+                                                                        href={resource.isUploadedFile ? `${server}/${resource.url}` : resource.url} 
+                                                                        target="_blank" 
+                                                                        rel="noreferrer"
+                                                                        className="resource-link"
+                                                                    >
+                                                                        <div className={`resource-icon resource-icon-${resource.type}`}>
+                                                                            {getResourceIcon(resource.type)}
+                                                                        </div>
+                                                                        
+                                                                        <div className="resource-details">
+                                                                            <h4>{resource.title}</h4>
+                                                                            <p>{resource.description}</p>
+                                                                            <div className="resource-url">
+                                                                                {resource.isUploadedFile ? (
+                                                                                    <span className="uploaded-file-label">Uploaded File</span>
+                                                                                ) : (
+                                                                                    <span>{truncateUrl(resource.url)}</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </a>
+                                                                    
+                                                                    {user?.role === 'admin' && (
+                                                                        <button
+                                                                            className="delete-resource-btn"
+                                                                            onClick={() => deleteResourceHandler(resource._id)}
+                                                                            disabled={btnLoading}
+                                                                        >
+                                                                            <i className="fas fa-trash-alt"></i>
+                                                                        </button>
+                                                                    )}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p>No resources available for this lecture</p>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                        
+                                        {user?.role !== 'admin' && (
+                                            <button
+                                                className="commonBtn"
+                                                onClick={() => addProgress(lecture._id)}
+                                            >
+                                                Mark as Complete
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p>No lecture selected</p>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
+            )}
+            {/* Add Teaching Assistants list */}
+            <div className="resources-section">
+                <TeachingAssistantsList teachingAssistants={teachingAssistants} />
             </div>
-        </>
+        </div>
     );
-}
+};
 
 export default Lecture;

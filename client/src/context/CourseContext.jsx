@@ -5,67 +5,92 @@ import { server } from '../main';
 const CourseContext = createContext();
 
 export const CourseContextProvider = ({ children }) => {
-    
+
     const [courses, setCourses] = useState([]);
     // const [loading, setLoading] = useState(true);
     // const [error, setError] = useState(null);
     const [course, setCourse] = useState([]);
+    const [lectures, setLectures] = useState([]);
     // const [myCourse, setMyCourse] = useState([]);
+    const [teachingAssistants, setTeachingAssistants] = useState([]);
 
     async function fetchCourses() {
-        
         try {
-
             const { data } = await axios.get(`${server}/api/courses/course/all`);
             setCourses(data.courses);
         } catch (error) {
             console.log(error);
-            // setError(error);
         }
-
     }
 
-    async function fetchCourse( id ) {
-        
+    async function fetchCourse(id) {
         try {
-
             const { data } = await axios.get(`${server}/api/courses/course/${id}`);
             setCourse(data.course);
+            // Fetch teaching assistants for this course
+            await fetchTeachingAssistants(id);
         } catch (error) {
             console.log(error);
-            // setError(error);
         }
-
     }
 
-    // async function fetchMyCourse() {
-        
-    //     try {
+    async function fetchLectures(courseId) {
+        try {
+            const { data } = await axios.get(
+                `${server}/api/courses/course/lectures/${courseId}`,
+                {
+                    headers: {
+                        token: localStorage.getItem('token'),
+                    }
+                }
+            );
+            setLectures(data.lectures);
+            return data.lectures;
+        } catch (error) {
+            console.log(error);
+            return [];
+        }
+    }
 
-    //         const { data } = await axios.get(`${server}/api/courses/course/my`, {
-    //             headers: {
-    //                 token: localStorage.getItem('token'),
-    //             }
-    //         });
-
-    //         // console.log(data.courses);
-    //         setMyCourse(data.courses);
-    //     } catch (error) {
-    //         console.log(error);
-    //         // setError(error);
-    //     }
-    // }
+    async function fetchTeachingAssistants(courseId) {
+        try {
+            const { data } = await axios.get(
+                `${server}/api/admin/teaching-assistant/${courseId}`,
+                {
+                    headers: {
+                        token: localStorage.getItem('token'),
+                    }
+                }
+            );
+            setTeachingAssistants(data.teachingAssistants);
+            return data.teachingAssistants;
+        } catch (error) {
+            console.log(error);
+            setTeachingAssistants([]);
+            return [];
+        }
+    }
 
     useEffect(() => {
         fetchCourses();
-        // fetchMyCourse();
     }, []);
 
-  return (
-    <CourseContext.Provider value={{ courses, fetchCourses, fetchCourse, course }}>
-      {children}
-    </CourseContext.Provider>
-  )
+    return (
+        <CourseContext.Provider
+            value={{
+                courses,
+                fetchCourses,
+                fetchCourse,
+                course,
+                lectures,
+                fetchLectures,
+                teachingAssistants,
+                fetchTeachingAssistants
+            }}
+        >
+            {children}
+        </CourseContext.Provider>
+    )
 };
 
 export const CourseData = () => useContext(CourseContext);

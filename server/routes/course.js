@@ -8,7 +8,7 @@ import {
   addProgress,
   getProgress 
 } from '../controllers/course.js';
-import { isAuth } from '../middlewares/isAuth.js';
+import { isAuth, isTeachingAssistant } from '../middlewares/isAuth.js';
 
 const router = express.Router();
 
@@ -18,7 +18,6 @@ router.get('/course/lectures/:id', isAuth, getLectures);
 router.get('/course/lecture/:id', isAuth, getLecture);
 router.get('/course/my', isAuth, getMyCourse);
 
-// Add progress routes - these were defined in controller but not in routes
 router.post('/course/progress', isAuth, addProgress);
 router.get('/course/progress', isAuth, getProgress);
 

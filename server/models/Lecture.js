@@ -11,7 +11,7 @@ const Schema = new mongoose.Schema({
     },
     video: {
         type: String,
-        required: true
+        // required: true
     },
     createdAt: {
         type: Date,

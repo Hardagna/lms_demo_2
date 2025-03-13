@@ -1,55 +1,51 @@
 :root {
-  /* Color Palette */
+  /* Color palette */
   --primary-color: #4a6eb0;
   --primary-dark: #3a5a8a;
-  --primary-light: #e7f0fd;
+  --primary-light: rgba(74, 110, 176, 0.15);
   
-  --secondary-color: #4CAF50;
-  --secondary-dark: #45a049;
-  --secondary-light: #e8f5e9;
+  --success-color: #4caf50;
+  --success-dark: #3a9a40;
   
   --danger-color: #f44336;
   --danger-dark: #d32f2f;
   
   --background-light: #ffffff;
   --background-grey: #f8f9fa;
-  --background-dark: #242424;
-  
   --border-color: #e9ecef;
+  --input-border: #ced4da;
+  
   --text-dark: #333333;
   --text-medium: #555555;
   --text-light: #6c757d;
   
   /* Spacing */
-  --space-xs: 0.5rem;
-  --space-sm: 0.75rem;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
   --space-md: 1rem;
   --space-lg: 1.5rem;
   --space-xl: 2rem;
   
-  /* Border Radius */
-  --border-radius-sm: 4px;
-  --border-radius-md: 6px;
-  --border-radius-lg: 8px;
-  --border-radius-xl: 10px;
-  
-  /* Box Shadow */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
-  
-  /* Font Sizes */
-  --font-size-xs: 0.85rem;
-  --font-size-sm: 0.9rem;
+  /* Typography */
+  --font-size-sm: 0.85rem;
   --font-size-md: 1rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: 1.5rem;
-  --font-size-xxl: 2rem;
-  --font-size-xxxl: 3.2rem;
   
-  /* Font Weights */
   --font-weight-normal: 400;
   --font-weight-medium: 500;
-  --font-weight-bold: 600;
-  --font-weight-bolder: 700;
+  --font-weight-bold: 700;
+  
+  /* Border radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+  
+  /* Animation */
+  --transition-speed: 0.2s;
 }

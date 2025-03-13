@@ -21,18 +21,34 @@ export const createCourse = async (req, res) => {
 };
 
 export const addLecture = async (req, res) => {
-
     const course = await Courses.findById(req.params.id);
 
     try {
         if (!course) {
             return res.status(404).json({ message: 'Course not found' });
         }
+        
         const { title, description } = req.body;
-        const file = req.file;
-        const lecture = await Lecture.create({ title, description, video: file?.path, course: course._id });  
+        const file = req.file; // This might be undefined if no file was uploaded
+        
+        // Create lecture data object
+        const lectureData = { 
+            title, 
+            description, 
+            course: course._id 
+        };
+        
+        // Only add video field if file exists
+        if (file) {
+            lectureData.video = file.path;
+        }
+        
+        const lecture = await Lecture.create(lectureData);
 
-        res.status(201).json({ message: 'Lecture added successfully', lecture, });
+        res.status(201).json({ 
+            message: 'Lecture added successfully', 
+            lecture 
+        });
 
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -190,4 +206,98 @@ export const addResourceFile = async (req, res) => {
     res.status(500).json({ message: error.message });
     console.log(error);
   }
+};
+
+export const assignTeachingAssistant = async (req, res) => {
+    try {
+        const { userId, courseId } = req.body;
+        
+        // Find the user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Find the course
+        const course = await Courses.findById(courseId);
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+        
+        // Check if user is already a teaching assistant for this course
+        if (user.teachingAssistantFor.includes(courseId)) {
+            return res.status(400).json({ message: 'User is already a teaching assistant for this course' });
+        }
+        
+        // Add the course to user's teachingAssistantFor array
+        user.teachingAssistantFor.push(courseId);
+        await user.save();
+        
+        res.status(200).json({ 
+            message: 'User successfully assigned as teaching assistant',
+            user: {
+                _id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                teachingAssistantFor: user.teachingAssistantFor
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+        console.log(error);
+    }
+};
+
+export const removeTeachingAssistant = async (req, res) => {
+    try {
+        const { userId, courseId } = req.body;
+        
+        // Find the user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Check if user is a teaching assistant for this course
+        if (!user.teachingAssistantFor.includes(courseId)) {
+            return res.status(400).json({ message: 'User is not a teaching assistant for this course' });
+        }
+        
+        // Remove the course from user's teachingAssistantFor array
+        user.teachingAssistantFor = user.teachingAssistantFor.filter(
+            course => course.toString() !== courseId
+        );
+        await user.save();
+        
+        res.status(200).json({ 
+            message: 'Teaching assistant role removed successfully',
+            user: {
+                _id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                teachingAssistantFor: user.teachingAssistantFor
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+        console.log(error);
+    }
+};
+
+export const getTeachingAssistants = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        
+        // Find users who are teaching assistants for this course
+        const teachingAssistants = await User.find({
+            teachingAssistantFor: courseId
+        }).select('-password');
+        
+        res.status(200).json({ teachingAssistants });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+        console.log(error);
+    }
 };

@@ -107,9 +107,7 @@ export const addResource = async (req, res) => {
 export const getLectureResources = async (req, res) => {
   try {
     const { lectureId } = req.params;
-    
     const resources = await Resource.find({ lecture: lectureId });
-    
     res.status(200).json({ resources });
   } catch (error) {
     res.status(500).json({ message: error.message });

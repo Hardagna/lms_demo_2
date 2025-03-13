@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import Layout from '../Utils/Layout'
 import { useState } from 'react'
 import axios from 'axios'
@@ -57,6 +57,12 @@ const AdminDashboard = ({ user }) => {
           <div className="box">
             <p>Total users</p>
             <p>{stats.totalUsers}</p>
+          </div>
+
+          <div className="dashboard-card">
+            <h2>Teaching Assistants</h2>
+            <p>Assign course-specific teaching assistants</p>
+            <Link to="/admin/teaching-assistants" className="dashboard-link">Manage Teaching Assistants</Link>
           </div>
         </div>
       </Layout>

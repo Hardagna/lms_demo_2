@@ -1,0 +1,102 @@
+@import url('../../styles/variables.css');
+
+/* Page Layout */
+.teaching-assistants {
+  padding: var(--space-lg);
+}
+
+.teaching-assistants h1 {
+  margin-bottom: var(--space-lg);
+  color: var(--color-primary);
+  text-align: center;
+  font-size: var(--font-size-xl); /* Consistent font size */
+}
+
+/* Course Selection */
+.course-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.course-selector select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius); /* Consistent border radius */
+  font-size: var(--font-size-md); /* Consistent font size */
+  padding: var(--space-sm);
+  width: 300px;
+}
+
+/* Container Layout */
+.users-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.users-container h2 {
+  color: var(--color-secondary);
+  margin-bottom: var(--space-md);
+  font-size: var(--font-size-lg); /* Consistent font size */
+}
+
+/* Tables Styling */
+.ta-table,
+.users-table {
+  border-collapse: collapse;
+  margin-bottom: var(--space-lg);
+  width: 100%;
+}
+
+.ta-table th,
+.users-table th,
+.ta-table td,
+.users-table td {
+  border: 1px solid var(--color-border);
+  padding: var(--space-md);
+  text-align: left;
+}
+
+.ta-table th,
+.users-table th {
+  background-color: var(--color-bg-alt);
+  font-weight: bold;
+  font-size: var(--font-size-md); /* Consistent font size */
+}
+
+.ta-table tr:nth-child(even),
+.users-table tr:nth-child(even) {
+  background-color: var(--color-bg-light);
+}
+
+/* Buttons */
+.assign-btn,
+.remove-btn {
+  border: none;
+  border-radius: var(--border-radius); /* Consistent border radius */
+  cursor: pointer;
+  font-weight: bold;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-md); /* Consistent font size */
+}
+
+.assign-btn {
+  background-color: var(--color-success);
+  color: white;
+}
+
+.remove-btn {
+  background-color: var(--color-danger);
+  color: white;
+}
+
+/* Loading State */
+.loading {
+  align-items: center;
+  display: flex;
+  font-size: var(--font-size-lg); /* Consistent font size */
+  justify-content: center;
+  min-height: 300px;
+}
