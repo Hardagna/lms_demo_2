@@ -1,9 +1,9 @@
 @import url('../../styles/variables.css');
 
 .users {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: var(--space-lg);
-  gap: var(--space-md);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: var(--space-lg);
+    gap: var(--space-md);
 }

@@ -6,37 +6,37 @@
   align-items: center;
   justify-content: center;
   margin-top: var(--space-xl);
+}
 
-  .account-details {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin-top: var(--space-lg);
-    padding: var(--space-lg);
-    background-color: var(--background-light);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-md);
+.profile .account-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-lg);
+  padding: var(--space-lg);
+  background-color: var(--background-light);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+}
 
-    p {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-medium);
-      margin-bottom: var(--space-sm);
-      color: var(--text-dark);
+.profile .account-details p {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-sm);
+  color: var(--text-dark);
+}
 
-      strong {
-        font-weight: var(--font-weight-bold);
-      }
-    }
-  }
+.profile .account-details p strong {
+  font-weight: var(--font-weight-bold);
 }
 
 @media (max-width: 768px) {
   .profile {
     margin-top: var(--space-lg);
-    
-    .account-details p {
-      font-size: var(--font-size-lg);
-    }
+  }
+
+  .profile .account-details p {
+    font-size: var(--font-size-lg);
   }
 }

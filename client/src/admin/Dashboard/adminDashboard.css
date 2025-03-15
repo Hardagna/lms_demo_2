@@ -2,90 +2,90 @@
 
 /* Page Layout */
 .main-content {
-  margin-left: 250px;
-  padding: var(--space-lg);
-  background-color: var(--background-grey);
-  min-height: 100vh;
-  transition: 0.5s;
+    margin-left: 250px;
+    padding: var(--space-lg);
+    background-color: var(--background-grey);
+    min-height: 100vh;
+    transition: 0.5s;
 }
 
 .main-content h1 {
-  margin-bottom: var(--space-lg);
-  color: var(--color-primary);
-  text-align: center;
-  font-size: var(--font-size-xl);
+    margin-bottom: var(--space-lg);
+    color: var(--color-primary);
+    text-align: center;
+    font-size: var(--font-size-xl);
 }
 
 /* Dashboard Boxes */
 .box {
-  background-color: var(--background-light);
-  padding: var(--space-lg);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  margin-bottom: var(--space-lg);
+    background-color: var(--background-light);
+    padding: var(--space-lg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-lg);
 }
 
 .box:hover {
-  box-shadow: var(--shadow-lg);
-  transition: box-shadow 0.3s ease;
+    box-shadow: var(--shadow-lg);
+    transition: box-shadow 0.3s ease;
 }
 
 /* Section Headers */
 .section-title {
-  color: var(--color-secondary);
-  margin-bottom: var(--space-md);
-  font-size: var(--font-size-lg);
+    color: var(--color-secondary);
+    margin-bottom: var(--space-md);
+    font-size: var(--font-size-lg);
 }
 
 /* Data Tables */
 .dashboard-table {
-  border-collapse: collapse;
-  margin-bottom: var(--space-lg);
-  width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--space-lg);
+    width: 100%;
 }
 
 .dashboard-table th,
 .dashboard-table td {
-  border: 1px solid var(--color-border);
-  padding: var(--space-md);
-  text-align: left;
+    border: 1px solid var(--color-border);
+    padding: var(--space-md);
+    text-align: left;
 }
 
 .dashboard-table th {
-  background-color: var(--color-bg-alt);
-  font-weight: bold;
-  font-size: var(--font-size-md);
+    background-color: var(--color-bg-alt);
+    font-weight: bold;
+    font-size: var(--font-size-md);
 }
 
 .dashboard-table tr:nth-child(even) {
-  background-color: var(--color-bg-light);
+    background-color: var(--color-bg-light);
 }
 
 /* Loading State */
 .loading {
-  align-items: center;
-  display: flex;
-  font-size: var(--font-size-lg);
-  justify-content: center;
-  min-height: 300px;
+    align-items: center;
+    display: flex;
+    font-size: var(--font-size-lg);
+    justify-content: center;
+    min-height: 300px;
 }
 
 /* Dashboard Actions */
 .action-button {
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  font-weight: bold;
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-size-md);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: bold;
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-md);
 }
 
 .primary-action {
-  background-color: var(--color-primary);
-  color: white;
+    background-color: var(--color-primary);
+    color: var(--color-white);
 }
 
 .secondary-action {
-  background-color: var(--color-secondary);
-  color: white;
+    background-color: var(--color-secondary);
+    color: var(--color-white);
 }

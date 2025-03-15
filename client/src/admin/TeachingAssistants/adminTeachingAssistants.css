@@ -2,126 +2,126 @@
 
 /* Page Layout */
 .teaching-assistants {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: var(--color-white);
+    border-radius: var(--border-radius-md);
+    padding: var(--space-md);
+    box-shadow: var(--shadow-sm);
 }
 
 .teaching-assistants h1 {
-  margin-bottom: 20px;
-  color: #333;
-  text-align: center;
-  font-size: var(--font-size-xl); /* Consistent font size */
+    margin-bottom: var(--space-md);
+    color: var(--color-dark);
+    text-align: center;
+    font-size: var(--font-size-xl);
 }
 
 /* Course Selection */
 .course-selector {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-md);
-  margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
 }
 
 .course-selector label {
-  margin-right: 10px;
-  font-weight: bold;
+    margin-right: var(--space-sm);
+    font-weight: bold;
 }
 
 .course-selector select {
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  min-width: 250px;
-  font-size: var(--font-size-md); /* Consistent font size */
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-border);
+    min-width: 250px;
+    font-size: var(--font-size-md);
 }
 
 /* Container Layout */
 .users-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
 }
 
 .users-container h2 {
-  margin-top: 30px;
-  margin-bottom: 15px;
-  color: #444;
-  font-size: var(--font-size-lg); /* Consistent font size */
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-md);
+    color: var(--color-dark);
+    font-size: var(--font-size-lg);
 }
 
 /* Tables Styling */
 table.ta-table,
 table.users-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 30px;
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--space-lg);
 }
 
 table.ta-table th,
 table.users-table th,
 table.ta-table td,
 table.users-table td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
+    padding: var(--space-md);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
 }
 
 table.ta-table th,
 table.users-table th {
-  background-color: #f5f5f5;
-  font-weight: bold;
-  font-size: var(--font-size-md); /* Consistent font size */
+    background-color: var(--color-bg-alt);
+    font-weight: bold;
+    font-size: var(--font-size-md);
 }
 
 table.ta-table tr:nth-child(even),
 table.users-table tr:nth-child(even) {
-  background-color: var(--color-bg-light);
+    background-color: var(--color-bg-light);
 }
 
 /* Buttons */
 .assign-btn,
 .remove-btn {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s;
-  font-size: var(--font-size-md); /* Consistent font size */
+    padding: var(--space-xs) var(--space-md);
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    font-size: var(--font-size-md);
 }
 
 .assign-btn {
-  background-color: #2196f3;
-  color: white;
+    background-color: var(--color-primary);
+    color: var(--color-white);
 }
 
 .assign-btn:hover {
-  background-color: #0b7dda;
+    background-color: var(--color-primary-dark);
 }
 
 .remove-btn {
-  background-color: #ff5252;
-  color: white;
+    background-color: var(--color-danger);
+    color: var(--color-white);
 }
 
 .remove-btn:hover {
-  background-color: #ff1744;
+    background-color: var(--color-danger-dark);
 }
 
 /* Loading State */
 .loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-  font-size: 18px;
-  color: #666;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: var(--font-size-md);
+    color: var(--color-grey);
 }
 
 .admin-layout {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+    padding: var(--space-md);
+    max-width: 1200px;
+    margin: 0 auto;
 }

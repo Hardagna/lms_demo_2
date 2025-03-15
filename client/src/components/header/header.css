@@ -9,38 +9,40 @@ header {
   padding: var(--space-md);
   box-shadow: var(--shadow-md);
   position: relative;
+}
 
+.logo {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-dark);
+}
+
+.link {
+  display: flex;
+  gap: var(--space-md);
+  text-decoration: none;
+  color: var(--text-dark);
+  margin: 0 var(--space-md);
+  font-size: var(--font-size-md);
+}
+
+.link a {
+  text-decoration: none;
+  color: var(--text-dark);
+  transition: color 0.3s;
+}
+
+.link a:hover {
+  color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
   .logo {
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-dark);
-
-    @media (max-width: 768px) {
-      font-size: var(--font-size-lg);
-    }
+    font-size: var(--font-size-lg);
   }
 
   .link {
-    display: flex;
-    gap: var(--space-md);
-    text-decoration: none;
-    color: var(--text-dark);
-    margin: 0 var(--space-md);
-    font-size: var(--font-size-md);
-
-    @media (max-width: 768px) {
-      font-size: var(--font-size-xs);
-      gap: var(--space-xs);
-    }
-
-    a {
-      text-decoration: none;
-      color: var(--text-dark);
-      transition: color 0.3s;
-
-      &:hover {
-        color: var(--primary-color);
-      }
-    }
+    font-size: var(--font-size-xs);
+    gap: var(--space-xs);
   }
 }

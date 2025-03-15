@@ -7,58 +7,60 @@
   justify-content: center;
   height: 100vh;
   background-color: var(--background-grey);
+}
 
-  .home-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 500px;
-    padding: var(--space-lg);
-    background-color: var(--background-light);
-    border-radius: var(--border-radius-md);
-    box-shadow: var(--shadow-md);
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 500px;
+  padding: var(--space-lg);
+  background-color: var(--background-light);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-md);
+}
 
-    h1 {
-      margin-bottom: var(--space-lg);
-      font-size: var(--font-size-xxl);
-      color: var(--text-dark);
+.home-container h1 {
+  margin-bottom: var(--space-lg);
+  font-size: var(--font-size-xxl);
+  color: var(--text-dark);
+}
 
-      @media (max-width: 768px) {
-        font-size: var(--font-size-xl);
-      }
-    }
+.home-container p {
+  margin-bottom: var(--space-lg);
+  font-size: var(--font-size-md);
+  color: var(--text-dark);
+  text-align: center;
+}
 
-    p {
-      margin-bottom: var(--space-lg);
-      font-size: var(--font-size-md);
-      color: var(--text-dark);
-      text-align: center;
+.home-container form {
+  width: 100%;
+}
 
-      @media (max-width: 768px) {
-        font-size: var(--font-size-sm);
-      }
-    }
+.home-container form button {
+  width: 100%;
+  padding: var(--space-sm);
+  background-color: var(--primary-color);
+  color: var(--background-light);
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
 
-    form {
-      width: 100%;
+.home-container form button:hover {
+  background-color: var(--primary-dark);
+}
 
-      button {
-        width: 100%;
-        padding: var(--space-sm);
-        background-color: var(--primary-color);
-        color: var(--background-light);
-        border: none;
-        border-radius: var(--border-radius-md);
-        font-size: var(--font-size-md);
-        cursor: pointer;
-        transition: background-color 0.2s;
+@media (max-width: 768px) {
+  .home-container h1 {
+    font-size: var(--font-size-xl);
+  }
 
-        &:hover {
-          background-color: var(--primary-dark);
-        }
-      }
-    }
+  .home-container p {
+    font-size: var(--font-size-sm);
   }
 }

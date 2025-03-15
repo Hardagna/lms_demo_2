@@ -737,6 +737,104 @@
   background-color: #3a5a8a;
 }
 
+/* Comment Section Styles */
+
+.comment-section {
+  width: 100%;
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
+  border-top: 1px solid var(--border-color);
+  background-color: var(--background-light);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.comment-section h3 {
+  margin-bottom: var(--space-lg);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-dark);
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-xl);
+}
+
+.comment-form textarea {
+  width: 100%;
+  padding: var(--space-md);
+  border: 1px solid #ced4da;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-md);
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.comment-form textarea:focus {
+  outline: none;
+  border-color: #4a6eb0;
+  box-shadow: 0 0 0 2px rgba(74, 110, 176, 0.25);
+}
+
+.comment-form button {
+  align-self: flex-end;
+  padding: var(--space-sm) var(--space-lg);
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.comment-form button:hover {
+  background-color: var(--primary-dark);
+}
+
+.comment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.comment-item {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  border: 1px solid #e9ecef;
+  border-radius: var(--border-radius-md);
+  background-color: white;
+  transition: background-color 0.2s;
+}
+
+.comment-item:hover {
+  background-color: #f8f9fa;
+}
+
+.comment-item .comment-author {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-dark);
+  margin-bottom: var(--space-sm);
+}
+
+.comment-item .comment-text {
+  color: var(--text-medium);
+  font-size: var(--font-size-md);
+  line-height: 1.4;
+}
+
+.comment-item .comment-date {
+  align-self: flex-end;
+  font-size: var(--font-size-sm);
+  color: #6c757d;
+  margin-top: var(--space-sm);
+}
+
 @media (min-width: 768px) {
   .search-input-container {
     flex-direction: row;

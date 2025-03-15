@@ -50,6 +50,9 @@ const Lecture = ({ user }) => {
     const [resourceFilePreview, setResourceFilePreview] = useState('');
     const [uploadingResource, setUploadingResource] = useState(false);
 
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState('');
+
     const params = useParams();
     const navigate = useNavigate();
 
@@ -401,6 +404,47 @@ const Lecture = ({ user }) => {
         );
     };
 
+    const fetchComments = async () => {
+        try {
+            const { data } = await axios.get(`${server}/api/comments/${params.id}`, {
+                headers: {
+                    token: localStorage.getItem('token'),
+                },
+            });
+            setComments(data.comments);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const addCommentHandler = async (e) => {
+        e.preventDefault();
+        try {
+            const { data } = await axios.post(`${server}/api/comments/${params.id}`, { content: newComment }, {
+                headers: {
+                    token: localStorage.getItem('token'),
+                },
+            });
+            setComments([...comments, data.comment]);
+            setNewComment('');
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const deleteCommentHandler = async (commentId) => {
+        try {
+            await axios.delete(`${server}/api/comments/${commentId}`, {
+                headers: {
+                    token: localStorage.getItem('token'),
+                },
+            });
+            setComments(comments.filter(comment => comment._id !== commentId));
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
     // Fetch lectures when component mounts
     useEffect(() => {
         getLectures();
@@ -414,6 +458,10 @@ const Lecture = ({ user }) => {
         if (params.id) {
             fetchTeachingAssistants(params.id);
         }
+    }, [params.id]);
+
+    useEffect(() => {
+        fetchComments();
     }, [params.id]);
 
     return (
@@ -870,6 +918,29 @@ const Lecture = ({ user }) => {
             {/* Add Teaching Assistants list */}
             <div className="resources-section">
                 <TeachingAssistantsList teachingAssistants={teachingAssistants} />
+            </div>
+            <div className="comments-section">
+                <h3>Comments</h3>
+                <form onSubmit={addCommentHandler}>
+                    <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Add a comment"
+                        required
+                    />
+                    <button type="submit">Post Comment</button>
+                </form>
+                <div className="comments-list">
+                    {comments.map(comment => (
+                        <div key={comment._id} className="comment">
+                            <p><strong>{comment.user.username}</strong></p>
+                            <p>{comment.content}</p>
+                            {(comment.user._id === user._id || user.role === 'admin') && (
+                                <button onClick={() => deleteCommentHandler(comment._id)}>Delete</button>
+                            )}
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );
