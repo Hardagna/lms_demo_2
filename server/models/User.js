@@ -43,6 +43,19 @@ const userSchema = new mongoose.Schema({
     resetPasswordExpire: Date,
 });
 
+// Update to add username during registering a user
+userSchema.pre('save', function(next) {
+    // If username is not set and name exists, use name as username
+    if (!this.username && this.name) {
+        this.username = this.name;
+    }
+    // If username is not set and email exists, use email prefix as username
+    else if (!this.username && this.email) {
+        this.username = this.email.split('@')[0];
+    }
+    next();
+});
+
 userSchema.methods.getJWTToken = function () {
     return jwt.sign({ _id: this._id }, process.env.JWT_SECRET, {
         expiresIn: '15d',

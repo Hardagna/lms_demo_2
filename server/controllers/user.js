@@ -5,7 +5,6 @@ import sendMail from '../middlewares/sendMail.js';
 
 export const register = async (req, res) => {
     try {
-        // res.send('Register api');
         const { email, name, password } = req.body;
         let user = await User.findOne({ email });
 
@@ -15,9 +14,13 @@ export const register = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 12);
 
+        // Create username from name or email
+        const username = name || email.split('@')[0];
+
         user = {
             name,
             email,
+            username, // Add username
             password: hashedPassword,
         }
 
@@ -50,6 +53,7 @@ export const verifyUser = async (req, res) => {
         await User.create({
             name: verify.user.name,
             email: verify.user.email,
+            username: verify.user.username || verify.user.email.split('@')[0], // Ensure username exists
             password: verify.user.password
         })
 

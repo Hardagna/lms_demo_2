@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { server } from '../../main';
-import Layout from '../Utils/Layout';
 import { useNavigate } from 'react-router-dom';
+import { server } from '../../main';
 import toast from 'react-hot-toast';
-import './adminTeachingAssistants.css';
+import './AdminTeachingAssistants.css';
+
+const Layout = ({ children }) => (
+  <div className="admin-layout">
+    {children}
+  </div>
+);
 
 const AdminTeachingAssistants = ({ user }) => {
   const navigate = useNavigate();
@@ -26,17 +31,17 @@ const AdminTeachingAssistants = ({ user }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch courses
         const coursesResponse = await axios.get(`${server}/api/courses/course/all`);
         setCourses(coursesResponse.data.courses);
-        
+
         // Fetch users
         const usersResponse = await axios.get(`${server}/api/admin/users`, {
           headers: { token: localStorage.getItem('token') }
         });
         setUsers(usersResponse.data.users);
-        
+
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -44,7 +49,7 @@ const AdminTeachingAssistants = ({ user }) => {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, []);
 
@@ -65,7 +70,7 @@ const AdminTeachingAssistants = ({ user }) => {
           setLoading(false);
         }
       };
-      
+
       fetchTeachingAssistants();
     }
   }, [selectedCourse]);
@@ -79,38 +84,51 @@ const AdminTeachingAssistants = ({ user }) => {
       toast.error('Please select a course first');
       return;
     }
-    
+
     try {
       setLoading(true);
+      
+      // Find the user in our users array
+      const userToAssign = users.find(u => u._id === userId);
+      
+      if (!userToAssign) {
+        toast.error('User information not found');
+        setLoading(false);
+        return;
+      }
+      
+      // Send the request with user info
       const response = await axios.post(
         `${server}/api/admin/teaching-assistant/assign`,
-        { userId, courseId: selectedCourse },
+        {
+          userId,
+          courseId: selectedCourse,
+          name: userToAssign.username || userToAssign.name // Try username first, then name
+        },
         { headers: { token: localStorage.getItem('token') } }
       );
-      
+
       toast.success(response.data.message);
-      
+
       // Refresh teaching assistants list
       const taResponse = await axios.get(`${server}/api/admin/teaching-assistant/${selectedCourse}`, {
         headers: { token: localStorage.getItem('token') }
       });
       setTeachingAssistants(taResponse.data.teachingAssistants);
-      
+
       setLoading(false);
     } catch (error) {
       console.error('Error assigning teaching assistant:', error);
+
+      let errorMessage = 'Error assigning teaching assistant';
       if (error.response) {
-        console.error('Response data:', error.response.data);
-        console.error('Response status:', error.response.status);
-        console.error('Response headers:', error.response.headers);
-        toast.error(error.response.data.message || 'Error assigning teaching assistant');
+        console.error('Error response data:', error.response.data);
+        errorMessage = error.response.data.message || 'Server error occurred';
       } else if (error.request) {
-        console.error('Request data:', error.request);
-        toast.error('No response received from server');
-      } else {
-        console.error('Error message:', error.message);
-        toast.error('Error assigning teaching assistant');
+        errorMessage = 'No response received from server';
       }
+
+      toast.error(errorMessage);
       setLoading(false);
     }
   };
@@ -120,7 +138,7 @@ const AdminTeachingAssistants = ({ user }) => {
       toast.error('Please select a course first');
       return;
     }
-    
+
     try {
       setLoading(true);
       const response = await axios.post(
@@ -128,15 +146,15 @@ const AdminTeachingAssistants = ({ user }) => {
         { userId, courseId: selectedCourse },
         { headers: { token: localStorage.getItem('token') } }
       );
-      
+
       toast.success(response.data.message);
-      
+
       // Refresh teaching assistants list
       const taResponse = await axios.get(`${server}/api/admin/teaching-assistant/${selectedCourse}`, {
         headers: { token: localStorage.getItem('token') }
       });
       setTeachingAssistants(taResponse.data.teachingAssistants);
-      
+
       setLoading(false);
     } catch (error) {
       console.error('Error removing teaching assistant:', error);
@@ -145,8 +163,9 @@ const AdminTeachingAssistants = ({ user }) => {
     }
   };
 
+  // Fixed function to properly check if user is a teaching assistant
   const isTeachingAssistant = (userId) => {
-    return teachingAssistants.some(ta => ta._id === userId);
+    return teachingAssistants.some(ta => ta._id.toString() === userId.toString());
   };
 
   if (loading) {
@@ -161,12 +180,12 @@ const AdminTeachingAssistants = ({ user }) => {
     <Layout>
       <div className="teaching-assistants">
         <h1>Manage Teaching Assistants</h1>
-        
+
         <div className="course-selector">
           <label htmlFor="course-select">Select Course:</label>
-          <select 
-            id="course-select" 
-            value={selectedCourse} 
+          <select
+            id="course-select"
+            value={selectedCourse}
             onChange={handleCourseChange}
           >
             <option value="">-- Select a course --</option>
@@ -177,7 +196,7 @@ const AdminTeachingAssistants = ({ user }) => {
             ))}
           </select>
         </div>
-        
+
         {selectedCourse && (
           <div className="users-container">
             <h2>Current Teaching Assistants</h2>
@@ -185,7 +204,7 @@ const AdminTeachingAssistants = ({ user }) => {
               <table className="ta-table">
                 <thead>
                   <tr>
-                    <th>Username</th>
+                    <th>Name</th>
                     <th>Email</th>
                     <th>Action</th>
                   </tr>
@@ -193,10 +212,10 @@ const AdminTeachingAssistants = ({ user }) => {
                 <tbody>
                   {teachingAssistants.map(ta => (
                     <tr key={ta._id}>
-                      <td>{ta.username}</td>
+                      <td>{ta.username || ta.name}</td>
                       <td>{ta.email}</td>
                       <td>
-                        <button 
+                        <button
                           className="remove-btn"
                           onClick={() => removeTeachingAssistant(ta._id)}
                         >
@@ -210,42 +229,44 @@ const AdminTeachingAssistants = ({ user }) => {
             ) : (
               <p>No teaching assistants assigned to this course.</p>
             )}
-            
+
             <h2>Available Users</h2>
             <table className="users-table">
               <thead>
                 <tr>
-                  <th>Username</th>
+                  <th>Name</th>
                   <th>Email</th>
                   <th>Role</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map(user => (
-                  <tr key={user._id}>
-                    <td>{user.username}</td>
-                    <td>{user.email}</td>
-                    <td>{user.role}</td>
-                    <td>
-                      {isTeachingAssistant(user._id) ? (
-                        <button
-                          className="remove-btn"
-                          onClick={() => removeTeachingAssistant(user._id)}
-                        >
-                          Remove
-                        </button>
-                      ) : (
-                        <button
-                          className="assign-btn"
-                          onClick={() => assignTeachingAssistant(user._id)}
-                        >
-                          Assign
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {users
+                  .filter(user => user.role !== 'admin') // Don't show admins as potential TAs
+                  .map(user => (
+                    <tr key={user._id}>
+                      <td>{user.username || user.name}</td>
+                      <td>{user.email}</td>
+                      <td>{user.role}</td>
+                      <td>
+                        {isTeachingAssistant(user._id) ? (
+                          <button
+                            className="remove-btn"
+                            onClick={() => removeTeachingAssistant(user._id)}
+                          >
+                            Remove
+                          </button>
+                        ) : (
+                          <button
+                            className="assign-btn"
+                            onClick={() => assignTeachingAssistant(user._id)}
+                          >
+                            Assign
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

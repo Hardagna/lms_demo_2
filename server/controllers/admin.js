@@ -27,27 +27,27 @@ export const addLecture = async (req, res) => {
         if (!course) {
             return res.status(404).json({ message: 'Course not found' });
         }
-        
+
         const { title, description } = req.body;
         const file = req.file; // This might be undefined if no file was uploaded
-        
+
         // Create lecture data object
-        const lectureData = { 
-            title, 
-            description, 
-            course: course._id 
+        const lectureData = {
+            title,
+            description,
+            course: course._id
         };
-        
+
         // Only add video field if file exists
         if (file) {
             lectureData.video = file.path;
         }
-        
+
         const lecture = await Lecture.create(lectureData);
 
-        res.status(201).json({ 
-            message: 'Lecture added successfully', 
-            lecture 
+        res.status(201).json({
+            message: 'Lecture added successfully',
+            lecture
         });
 
     } catch (error) {
@@ -61,7 +61,7 @@ export const deleteLecture = async (req, res) => {
     try {
         // Delete associated resources
         await Resource.deleteMany({ lecture: req.params.id });
-        
+
         rm(lecture.video, () => {
             console.log('File deleted');
         });
@@ -84,11 +84,11 @@ export const deleteCourse = async (req, res) => {
             await lecture.remove();
             console.log('Lecture deleted');
         }));
-    
+
         rm(course.image, () => {
             console.log('File deleted');
         });
-    
+
         await Lecture.find({ course: req.params.id }).deleteMany();
         await course.deleteOne();
         await User.updateMany({ $pull: { subscription: req.params.id } });
@@ -115,7 +115,7 @@ export const getStats = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({ _id: { $ne: req.user._id }}).select('-password');
+        const users = await User.find({ _id: { $ne: req.user._id } }).select('-password');
         res.status(200).json({ users, });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -150,98 +150,57 @@ export const updateRole = async (req, res) => {
 };
 
 export const deleteResource = async (req, res) => {
-  try {
-    const resource = await Resource.findById(req.params.id);
-    
-    if (!resource) {
-      return res.status(404).json({ message: 'Resource not found' });
+    try {
+        const resource = await Resource.findById(req.params.id);
+
+        if (!resource) {
+            return res.status(404).json({ message: 'Resource not found' });
+        }
+
+        // If it's an uploaded file, delete it from the filesystem
+        if (resource.isUploadedFile && resource.url) {
+            try {
+                await promisify(fs.unlink)(resource.url);
+                console.log('Resource file deleted from filesystem');
+            } catch (fileError) {
+                console.log('Error deleting resource file:', fileError);
+            }
+        }
+
+        await resource.deleteOne();
+
+        res.status(200).json({ message: 'Resource deleted successfully', resource });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+        console.log(error);
     }
-    
-    // If it's an uploaded file, delete it from the filesystem
-    if (resource.isUploadedFile && resource.url) {
-      try {
-        await promisify(fs.unlink)(resource.url);
-        console.log('Resource file deleted from filesystem');
-      } catch (fileError) {
-        console.log('Error deleting resource file:', fileError);
-      }
-    }
-    
-    await resource.deleteOne();
-    
-    res.status(200).json({ message: 'Resource deleted successfully', resource });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-    console.log(error);
-  }
 };
 
 export const addResourceFile = async (req, res) => {
-  try {
-    const { lectureId } = req.params;
-    const { title, description, type } = req.body;
-    const file = req.file;
-    
-    const lecture = await Lecture.findById(lectureId);
-    
-    if (!lecture) {
-      return res.status(404).json({ message: "Lecture not found" });
-    }
-    
-    // Create resource with file path
-    const resource = await Resource.create({
-      title,
-      type,
-      url: file?.path, // Store file path in url field
-      description,
-      lecture: lectureId,
-      isUploadedFile: true // Flag to identify it's a local file
-    });
-    
-    res.status(201).json({ 
-      message: "Resource file uploaded successfully", 
-      resource 
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-    console.log(error);
-  }
-};
-
-export const assignTeachingAssistant = async (req, res) => {
     try {
-        const { userId, courseId } = req.body;
-        
-        // Find the user
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+        const { lectureId } = req.params;
+        const { title, description, type } = req.body;
+        const file = req.file;
+
+        const lecture = await Lecture.findById(lectureId);
+
+        if (!lecture) {
+            return res.status(404).json({ message: "Lecture not found" });
         }
-        
-        // Find the course
-        const course = await Courses.findById(courseId);
-        if (!course) {
-            return res.status(404).json({ message: 'Course not found' });
-        }
-        
-        // Check if user is already a teaching assistant for this course
-        if (user.teachingAssistantFor.includes(courseId)) {
-            return res.status(400).json({ message: 'User is already a teaching assistant for this course' });
-        }
-        
-        // Add the course to user's teachingAssistantFor array
-        user.teachingAssistantFor.push(courseId);
-        await user.save();
-        
-        res.status(200).json({ 
-            message: 'User successfully assigned as teaching assistant',
-            user: {
-                _id: user._id,
-                username: user.username,
-                email: user.email,
-                role: user.role,
-                teachingAssistantFor: user.teachingAssistantFor
-            }
+
+        // Create resource with file path
+        const resource = await Resource.create({
+            title,
+            type,
+            url: file?.path, // Store file path in url field
+            description,
+            lecture: lectureId,
+            isUploadedFile: true // Flag to identify it's a local file
+        });
+
+        res.status(201).json({
+            message: "Resource file uploaded successfully",
+            resource
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -249,28 +208,69 @@ export const assignTeachingAssistant = async (req, res) => {
     }
 };
 
-export const removeTeachingAssistant = async (req, res) => {
+export const assignTeachingAssistant = async (req, res) => {
     try {
-        const { userId, courseId } = req.body;
-        
+        const { userId, courseId, name } = req.body;
+
         // Find the user
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        
+
+        // Find the course
+        const course = await Courses.findById(courseId);
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        // Check if user is already a teaching assistant for this course
+        if (user.teachingAssistantFor.includes(courseId)) {
+            return res.status(400).json({ message: 'User is already a teaching assistant for this course' });
+        }
+
+        // Add the course to user's teachingAssistantFor array
+        user.teachingAssistantFor.push(courseId);
+        await user.save();
+
+        res.status(200).json({
+            message: 'User successfully assigned as teaching assistant',
+            user: {
+                _id: user._id,
+                username: user.username || user.name, // Use existing username or name as fallback
+                email: user.email,
+                role: user.role,
+                teachingAssistantFor: user.teachingAssistantFor
+            }
+        });
+    } catch (error) {
+        console.error('Error in assignTeachingAssistant:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const removeTeachingAssistant = async (req, res) => {
+    try {
+        const { userId, courseId } = req.body;
+
+        // Find the user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
         // Check if user is a teaching assistant for this course
         if (!user.teachingAssistantFor.includes(courseId)) {
             return res.status(400).json({ message: 'User is not a teaching assistant for this course' });
         }
-        
+
         // Remove the course from user's teachingAssistantFor array
         user.teachingAssistantFor = user.teachingAssistantFor.filter(
             course => course.toString() !== courseId
         );
         await user.save();
-        
-        res.status(200).json({ 
+
+        res.status(200).json({
             message: 'Teaching assistant role removed successfully',
             user: {
                 _id: user._id,
@@ -289,12 +289,12 @@ export const removeTeachingAssistant = async (req, res) => {
 export const getTeachingAssistants = async (req, res) => {
     try {
         const { courseId } = req.params;
-        
+
         // Find users who are teaching assistants for this course
         const teachingAssistants = await User.find({
             teachingAssistantFor: courseId
         }).select('-password');
-        
+
         res.status(200).json({ teachingAssistants });
     } catch (error) {
         res.status(500).json({ message: error.message });

@@ -2,12 +2,15 @@
 
 /* Page Layout */
 .teaching-assistants {
-  padding: var(--space-lg);
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .teaching-assistants h1 {
-  margin-bottom: var(--space-lg);
-  color: var(--color-primary);
+  margin-bottom: 20px;
+  color: #333;
   text-align: center;
   font-size: var(--font-size-xl); /* Consistent font size */
 }
@@ -18,15 +21,20 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-md);
-  margin-bottom: var(--space-lg);
+  margin-bottom: 20px;
+}
+
+.course-selector label {
+  margin-right: 10px;
+  font-weight: bold;
 }
 
 .course-selector select {
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius); /* Consistent border radius */
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  min-width: 250px;
   font-size: var(--font-size-md); /* Consistent font size */
-  padding: var(--space-sm);
-  width: 300px;
 }
 
 /* Container Layout */
@@ -37,66 +45,83 @@
 }
 
 .users-container h2 {
-  color: var(--color-secondary);
-  margin-bottom: var(--space-md);
+  margin-top: 30px;
+  margin-bottom: 15px;
+  color: #444;
   font-size: var(--font-size-lg); /* Consistent font size */
 }
 
 /* Tables Styling */
-.ta-table,
-.users-table {
-  border-collapse: collapse;
-  margin-bottom: var(--space-lg);
+table.ta-table,
+table.users-table {
   width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
 }
 
-.ta-table th,
-.users-table th,
-.ta-table td,
-.users-table td {
-  border: 1px solid var(--color-border);
-  padding: var(--space-md);
+table.ta-table th,
+table.users-table th,
+table.ta-table td,
+table.users-table td {
+  padding: 12px;
   text-align: left;
+  border-bottom: 1px solid #eee;
 }
 
-.ta-table th,
-.users-table th {
-  background-color: var(--color-bg-alt);
+table.ta-table th,
+table.users-table th {
+  background-color: #f5f5f5;
   font-weight: bold;
   font-size: var(--font-size-md); /* Consistent font size */
 }
 
-.ta-table tr:nth-child(even),
-.users-table tr:nth-child(even) {
+table.ta-table tr:nth-child(even),
+table.users-table tr:nth-child(even) {
   background-color: var(--color-bg-light);
 }
 
 /* Buttons */
 .assign-btn,
 .remove-btn {
+  padding: 6px 12px;
   border: none;
-  border-radius: var(--border-radius); /* Consistent border radius */
+  border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  padding: var(--space-sm) var(--space-md);
+  transition: background-color 0.2s;
   font-size: var(--font-size-md); /* Consistent font size */
 }
 
 .assign-btn {
-  background-color: var(--color-success);
+  background-color: #2196f3;
   color: white;
 }
 
+.assign-btn:hover {
+  background-color: #0b7dda;
+}
+
 .remove-btn {
-  background-color: var(--color-danger);
+  background-color: #ff5252;
   color: white;
+}
+
+.remove-btn:hover {
+  background-color: #ff1744;
 }
 
 /* Loading State */
 .loading {
-  align-items: center;
   display: flex;
-  font-size: var(--font-size-lg); /* Consistent font size */
   justify-content: center;
-  min-height: 300px;
+  align-items: center;
+  height: 200px;
+  font-size: 18px;
+  color: #666;
+}
+
+.admin-layout {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
