@@ -15,6 +15,7 @@ export const UserContextProvider = ({ children }) => {
     async function loginUser ( email, password, navigate ) {
         setBtnLoading(true);
         try {
+            console.log(email, password);
             const { data } = await axios.post(`${server}/api/users/user/login`,{ email, password });
 
             toast.success(data.message);

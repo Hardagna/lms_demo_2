@@ -20,8 +20,8 @@ export const register = async (req, res) => {
         user = {
             name,
             email,
-            username, // Add username
-            password: hashedPassword,
+            username,
+            password, // Plain password - will be hashed by the pre-save hook
         }
 
         const otp = Math.floor(Math.random() * 100000);
@@ -42,7 +42,7 @@ export const verifyUser = async (req, res) => {
     try {
         const { otp, activationToken } = req.body;
         const verify = jwt.verify(activationToken, process.env.ACTIVATION);
-        
+
         if (!verify) {
             return res.status(400).json({ message: 'Invalid or expired otp' });
         }
@@ -53,8 +53,8 @@ export const verifyUser = async (req, res) => {
         await User.create({
             name: verify.user.name,
             email: verify.user.email,
-            username: verify.user.username || verify.user.email.split('@')[0], // Ensure username exists
-            password: verify.user.password
+            username: verify.user.username || verify.user.email.split('@')[0],
+            password: verify.user.password // This should be the plain password if using model-based hashing
         })
 
         res.status(200).json({ message: 'User registered successfully' });
@@ -86,10 +86,6 @@ export const loginUser = async (req, res) => {
             });
         }
 
-        // Debug logging (remove in production)
-        console.log("Password from request:", password);
-        console.log("Stored hashed password exists:", !!user.password);
-
         // Make sure user.password exists before comparing
         if (!user.password) {
             return res.status(500).json({
@@ -97,8 +93,20 @@ export const loginUser = async (req, res) => {
             });
         }
 
-        // Compare passwords
-        const isMatch = await bcrypt.compare(password, user.password);
+        // Compare passwords with proper error handling
+        let isMatch = false;
+        try {
+            isMatch = await bcrypt.compare(password, user.password);
+            console.log("Password", password);
+            console.log("user.password", user.password);
+            // Debug line - remove in production
+            console.log("Password comparison result:", isMatch);
+        } catch (compareError) {
+            console.error("Password comparison error:", compareError);
+            return res.status(500).json({
+                message: "Error verifying password",
+            });
+        }
 
         if (!isMatch) {
             return res.status(401).json({
@@ -114,6 +122,7 @@ export const loginUser = async (req, res) => {
             token,
             user: {
                 _id: user._id,
+                name: user.name,
                 username: user.username,
                 email: user.email,
                 avatar: user.avatar,
