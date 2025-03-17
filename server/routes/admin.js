@@ -1,20 +1,21 @@
 import express from 'express';
 import { isAuth, isAdmin, isTeachingAssistant } from '../middlewares/isAuth.js';
-import { 
-    createCourse, 
-    addLecture, 
-    deleteLecture, 
-    deleteCourse, 
-    updateRole, 
-    getAllUsers, 
-    getStats, 
-    deleteResource, 
+import {
+    createCourse,
+    addLecture,
+    deleteLecture,
+    deleteCourse,
+    updateRole,
+    getAllUsers,
+    getStats,
+    deleteResource,
     addResourceFile,
     assignTeachingAssistant,
     removeTeachingAssistant,
     getTeachingAssistants
 } from '../controllers/admin.js';
 import { upload } from '../middlewares/multer.js';
+import { createQuiz, getQuizzes, updateQuiz, deleteQuiz } from '../controllers/quiz.js';
 
 const router = express.Router();
 
@@ -32,5 +33,11 @@ router.post('/resource/upload/:lectureId', isAuth, isTeachingAssistant, upload, 
 router.post('/teaching-assistant/assign', isAuth, isAdmin, assignTeachingAssistant);
 router.post('/teaching-assistant/remove', isAuth, isAdmin, removeTeachingAssistant);
 router.get('/teaching-assistant/:courseId', isAuth, isAdmin, getTeachingAssistants);
+
+// Quiz management routes
+router.post('/quiz/create', isAuth, isAdmin, createQuiz);
+router.get('/quiz/:lectureId', isAuth, isAdmin, getQuizzes);
+router.put('/quiz/:quizId', isAuth, isAdmin, updateQuiz);
+router.delete('/quiz/:quizId', isAuth, isAdmin, deleteQuiz);
 
 export default router;

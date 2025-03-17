@@ -41,7 +41,8 @@ export const deleteComment = async (req, res) => {
             return res.status(403).json({ message: 'You are not authorized to delete this comment' });
         }
 
-        await comment.remove();
+        // Replace the deprecated remove() method
+        await Comment.findByIdAndDelete(commentId);
         await Lecture.findByIdAndUpdate(comment.lecture, { $pull: { comments: comment._id } });
 
         res.status(200).json({ message: 'Comment deleted successfully' });

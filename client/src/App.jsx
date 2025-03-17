@@ -16,33 +16,39 @@ import AdminDashboard from './admin/Dashboard/AdminDashboard';
 import AdminCourses from './admin/Courses/AdminCourses';
 import AdminUsers from './admin/Users/AdminUsers';
 import AdminTeachingAssistants from './admin/TeachingAssistants/AdminTeachingAssistants';
+import CreateQuiz from './pages/quiz/CreateQuiz';
+import ViewQuizzes from './pages/quiz/ViewQuizzes';
+import EditQuiz from './pages/quiz/EditQuiz';
 
 const App = () => {
 
   const { isAuth, user } = UserData();
   return (
-  <>
-  <BrowserRouter>
-    <Header isAuth={ isAuth } />
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/about" element={<About />} />
-      <Route path='/courses' element={ <Courses /> } />
-      <Route path='profile' element={ isAuth ? <Profile user = { user }  />:<Login />  } />
-      <Route path="/login" element={ isAuth ? <Home />:<Login />} />
-      <Route path="/register" element={ isAuth ? <Home />:<Register />} />
-      <Route path="/verify" element={ isAuth ? <Home />:<Verify />} />
-      <Route path="/courses/course/:id" element={isAuth ? <CourseDetails user = {user} />:<Login />} />
-      <Route path="/courses/course/lectures/:id" element={isAuth ? <Lecture user = {user} />:<Login />} />
+    <>
+      <BrowserRouter>
+        <Header isAuth={isAuth} />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path='/courses' element={<Courses />} />
+          <Route path='profile' element={isAuth ? <Profile user={user} /> : <Login />} />
+          <Route path="/login" element={isAuth ? <Home /> : <Login />} />
+          <Route path="/register" element={isAuth ? <Home /> : <Register />} />
+          <Route path="/verify" element={isAuth ? <Home /> : <Verify />} />
+          <Route path="/courses/course/:id" element={isAuth ? <CourseDetails user={user} /> : <Login />} />
+          <Route path="/courses/course/lectures/:id" element={isAuth ? <Lecture user={user} /> : <Login />} />
 
-      <Route path="/admin/dashboard" element={isAuth ? <AdminDashboard user = { user } />:<Login />} />
-      <Route path="/admin/course/all" element={isAuth ? <AdminCourses user = { user } />:<Login />} />
-      <Route path="/admin/users" element={isAuth ? <AdminUsers user = { user } />:<Login />} />
-      <Route path="/admin/teaching-assistants" element={isAuth ? <AdminTeachingAssistants user = { user } />:<Login />} />
+          <Route path="/admin/dashboard" element={isAuth ? <AdminDashboard user={user} /> : <Login />} />
+          <Route path="/admin/course/all" element={isAuth ? <AdminCourses user={user} /> : <Login />} />
+          <Route path="/admin/users" element={isAuth ? <AdminUsers user={user} /> : <Login />} />
+          <Route path="/admin/teaching-assistants" element={isAuth ? <AdminTeachingAssistants user={user} /> : <Login />} />
+          <Route path="/admin/quiz/create/:lectureId" element={isAuth ? <CreateQuiz /> : <Login />} />
+          <Route path="/admin/quiz/:lectureId" element={isAuth ? <ViewQuizzes /> : <Login />} />
+          <Route path="/admin/quiz/edit/:quizId" element={isAuth ? <EditQuiz /> : <Login />} />
 
-    </Routes>
-  </BrowserRouter>
-  </>
+        </Routes>
+      </BrowserRouter>
+    </>
   );
 };
 

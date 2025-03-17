@@ -538,6 +538,8 @@ const Lecture = ({ user }) => {
                                 >
                                     Upload Resource
                                 </button>
+                                <button onClick={() => navigate(`/admin/quiz/create/${lecture._id}`)}>Create Quiz</button>
+                                <button onClick={() => navigate(`/admin/quiz/${lecture._id}`)}>View Quizzes</button>
                             </div>
                         )}
                         
