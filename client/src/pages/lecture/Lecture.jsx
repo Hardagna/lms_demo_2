@@ -86,7 +86,8 @@ const Lecture = ({ user }) => {
                 }
             });
             setLecture(data.lecture);
-            // Get resources for the selected lecture
+            // Get resources for the selected lecture and display them
+            setResources([]); // Clear previous resources first
             getLectureResources(id);
             setLecLoading(false);
         } catch (error) {
@@ -112,7 +113,7 @@ const Lecture = ({ user }) => {
                     token: localStorage.getItem('token')
                 }
             });
-            
+
             // Reset form and refresh lectures
             setTitle('');
             setDescription('');
@@ -135,7 +136,7 @@ const Lecture = ({ user }) => {
                     token: localStorage.getItem('token')
                 }
             });
-            
+
             getLectures();
             setBtnLoading(false);
         } catch (error) {
@@ -148,7 +149,7 @@ const Lecture = ({ user }) => {
     const changeVideoHandler = (e) => {
         const file = e.target.files[0];
         setVideo(file);
-        
+
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => {
@@ -163,7 +164,7 @@ const Lecture = ({ user }) => {
                     token: localStorage.getItem('token')
                 }
             });
-            
+
             setCompleted(data.completedLectures);
             setLecLength(data.allLectures);
             setProgress(data.progressPercentage);
@@ -179,7 +180,7 @@ const Lecture = ({ user }) => {
                     token: localStorage.getItem('token')
                 }
             });
-            
+
             getProgress();
         } catch (error) {
             console.log(error);
@@ -196,7 +197,7 @@ const Lecture = ({ user }) => {
                     token: localStorage.getItem('token')
                 }
             });
-            
+
             setSearchResults(data.results);
             setSearching(false);
         } catch (error) {
@@ -210,7 +211,7 @@ const Lecture = ({ user }) => {
     const addResourceHandler = async (resource) => {
         try {
             const lectureId = selectedLectureForResource || lecture._id;
-            
+
             await axios.post(`${server}/api/resources/add/${lectureId}`, {
                 title: resource.title,
                 type: resource.type,
@@ -221,10 +222,10 @@ const Lecture = ({ user }) => {
                     token: localStorage.getItem('token')
                 }
             });
-            
+
             // Refresh resources
             getLectureResources(lectureId);
-            
+
             // Close search panel
             setShowResourceSearch(false);
         } catch (error) {
@@ -241,7 +242,7 @@ const Lecture = ({ user }) => {
                     token: localStorage.getItem('token')
                 }
             });
-            
+
             setResources(data.resources);
             setLoadingResources(false);
         } catch (error) {
@@ -260,7 +261,7 @@ const Lecture = ({ user }) => {
                     token: localStorage.getItem('token')
                 }
             });
-            
+
             // Refresh resources
             getLectureResources(lecture._id);
             setBtnLoading(false);
@@ -305,7 +306,7 @@ const Lecture = ({ user }) => {
     const handleResourceFileChange = (e) => {
         const file = e.target.files[0];
         setResourceFile(file);
-        
+
         // Create preview for certain file types
         if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
             const reader = new FileReader();
@@ -321,20 +322,20 @@ const Lecture = ({ user }) => {
     // Handle resource upload submission
     const uploadResourceHandler = async (e) => {
         e.preventDefault();
-        
+
         if (!resourceFile) {
             alert('Please select a file to upload');
             return;
         }
-        
+
         try {
             setUploadingResource(true);
-            
+
             const formData = new FormData();
             formData.append('title', resourceTitle);
             formData.append('description', resourceDescription);
             formData.append('image', resourceFile); // Using 'image' as the field name to match the server's multer setup
-            
+
             // Determine resource type based on file type
             let type = 'document';
             if (resourceFile.type.startsWith('image/')) {
@@ -346,28 +347,28 @@ const Lecture = ({ user }) => {
             } else if (resourceFile.type === 'application/pdf') {
                 type = 'pdf';
             }
-            
+
             formData.append('type', type);
-            
+
             const lectureId = selectedLectureForResource || lecture._id;
-            
+
             await axios.post(`${server}/api/admin/resource/upload/${lectureId}`, formData, {
                 headers: {
                     token: localStorage.getItem('token'),
                     'Content-Type': 'multipart/form-data',
                 }
             });
-            
+
             // Reset form
             setResourceTitle('');
             setResourceDescription('');
             setResourceFile(null);
             setResourceFilePreview('');
             setShowUploadResource(false);
-            
+
             // Refresh resources
             getLectureResources(lectureId);
-            
+
             setUploadingResource(false);
         } catch (error) {
             console.log(error);
@@ -380,23 +381,23 @@ const Lecture = ({ user }) => {
         // For uploaded files
         if (resource.isUploadedFile) {
             return (
-                <a 
-                    href={`${server}/${resource.url}`} 
-                    target="_blank" 
-                    rel="noreferrer" 
+                <a
+                    href={`${server}/${resource.url}`}
+                    target="_blank"
+                    rel="noreferrer"
                     className="preview-link"
                 >
                     <i className="fas fa-external-link-alt"></i> View File
                 </a>
             );
         }
-        
+
         // For external resources
         return (
-            <a 
-                href={resource.url} 
-                target="_blank" 
-                rel="noreferrer" 
+            <a
+                href={resource.url}
+                target="_blank"
+                rel="noreferrer"
                 className="preview-link"
             >
                 <i className="fas fa-external-link-alt"></i> Visit Resource
@@ -476,19 +477,19 @@ const Lecture = ({ user }) => {
                         {lectures.length > 0 ? (
                             <div className="lectures-list">
                                 {lectures.map((item) => (
-                                    <div 
-                                        key={item._id} 
+                                    <div
+                                        key={item._id}
                                         className={`lecture-item ${lecture._id === item._id ? 'active' : ''}`}
                                     >
-                                        <div 
-                                            className="lec-no" 
+                                        <div
+                                            className="lec-no"
                                             onClick={() => getLecture(item._id)}
                                         >
                                             {item.title}
                                         </div>
                                         {user?.role === 'admin' && (
-                                            <button 
-                                                className="delete-btn" 
+                                            <button
+                                                className="delete-btn"
                                                 onClick={() => deleteLectureHandler(item._id)}
                                                 disabled={btnLoading}
                                             >
@@ -501,12 +502,12 @@ const Lecture = ({ user }) => {
                         ) : (
                             <p>No lectures available</p>
                         )}
-                        
+
                         {/* Admin Controls */}
                         {user?.role === 'admin' && (
                             <div className="admin-controls">
-                                <button 
-                                    className={`commonBtn ${showAddForm ? 'active-btn' : ''}`} 
+                                <button
+                                    className={`commonBtn ${showAddForm ? 'active-btn' : ''}`}
                                     onClick={() => {
                                         setShowAddForm(!showAddForm);
                                         setShowDeleteForm(false);
@@ -516,8 +517,8 @@ const Lecture = ({ user }) => {
                                 >
                                     Add Lecture
                                 </button>
-                                <button 
-                                    className={`commonBtn ${showResourceSearch ? 'active-btn' : ''}`} 
+                                <button
+                                    className={`commonBtn ${showResourceSearch ? 'active-btn' : ''}`}
                                     onClick={() => {
                                         setShowResourceSearch(!showResourceSearch);
                                         setShowAddForm(false);
@@ -527,8 +528,8 @@ const Lecture = ({ user }) => {
                                 >
                                     Online Resources
                                 </button>
-                                <button 
-                                    className={`commonBtn ${showUploadResource ? 'active-btn' : ''}`} 
+                                <button
+                                    className={`commonBtn ${showUploadResource ? 'active-btn' : ''}`}
                                     onClick={() => {
                                         setShowUploadResource(!showUploadResource);
                                         setShowAddForm(false);
@@ -542,46 +543,46 @@ const Lecture = ({ user }) => {
                                 <button onClick={() => navigate(`/admin/quiz/${lecture._id}`)}>View Quizzes</button>
                             </div>
                         )}
-                        
+
                         {/* Add Lecture Form */}
                         {showAddForm && (
                             <div className="lec-form">
                                 <h3>Add New Lecture</h3>
                                 <form onSubmit={submitHandler}>
                                     <label htmlFor="title">Title</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         id="title"
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
                                         required
                                     />
-                                    
+
                                     <label htmlFor="description">Description</label>
-                                    <textarea 
+                                    <textarea
                                         id="description"
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
                                         required
                                     ></textarea>
-                                    
+
                                     <label htmlFor="video">Video (Optional)</label>
-                                    <input 
-                                        type="file" 
+                                    <input
+                                        type="file"
                                         id="video"
                                         accept="video/*"
                                         onChange={changeVideoHandler}
                                     />
-                                    
+
                                     {videoPreview && (
-                                        <video 
+                                        <video
                                             src={videoPreview}
                                             controls
                                             style={{ maxWidth: '100%', marginTop: '10px' }}
                                         ></video>
                                     )}
-                                    
-                                    <button 
+
+                                    <button
                                         type="submit"
                                         className="commonBtn"
                                         disabled={btnLoading}
@@ -591,12 +592,12 @@ const Lecture = ({ user }) => {
                                 </form>
                             </div>
                         )}
-                        
+
                         {/* Search Resources Form */}
                         {showResourceSearch && (
                             <div className="resource-search-form">
                                 <h3>Search Online Resources</h3>
-                                
+
                                 <div className="lecture-selector">
                                     <label htmlFor="selectLecture">Select Lecture</label>
                                     <select
@@ -611,7 +612,7 @@ const Lecture = ({ user }) => {
                                         ))}
                                     </select>
                                 </div>
-                                
+
                                 <form onSubmit={searchResourcesHandler}>
                                     <div className="search-input-container">
                                         <input
@@ -621,7 +622,7 @@ const Lecture = ({ user }) => {
                                             onChange={(e) => setResourceQuery(e.target.value)}
                                             required
                                         />
-                                        
+
                                         <select
                                             value={resourceType}
                                             onChange={(e) => setResourceType(e.target.value)}
@@ -634,7 +635,7 @@ const Lecture = ({ user }) => {
                                             <option value="audio">Audio</option>
                                         </select>
                                     </div>
-                                    
+
                                     <button
                                         type="submit"
                                         className="search-btn"
@@ -653,7 +654,7 @@ const Lecture = ({ user }) => {
                                         )}
                                     </button>
                                 </form>
-                                
+
                                 {/* Search Results */}
                                 {searching ? (
                                     <div className="searching-indicator">
@@ -670,11 +671,11 @@ const Lecture = ({ user }) => {
                                                             <div className={`resource-icon resource-icon-${resource.type}`}>
                                                                 {getResourceIcon(resource.type)}
                                                             </div>
-                                                            
+
                                                             <div className="resource-details">
                                                                 <h4>{resource.title}</h4>
                                                                 <p>{resource.description}</p>
-                                                                
+
                                                                 <div className="resource-url">
                                                                     <span>{truncateUrl(resource.url)}</span>
                                                                     <a
@@ -686,7 +687,7 @@ const Lecture = ({ user }) => {
                                                                         <i className="fas fa-external-link-alt"></i> Preview
                                                                     </a>
                                                                 </div>
-                                                                
+
                                                                 {resource.thumbnail && (
                                                                     <div className="resource-thumbnail">
                                                                         <img src={resource.thumbnail} alt={resource.title} />
@@ -694,7 +695,7 @@ const Lecture = ({ user }) => {
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        
+
                                                         <button
                                                             className="add-resource-btn"
                                                             onClick={() => addResourceHandler(resource)}
@@ -715,12 +716,12 @@ const Lecture = ({ user }) => {
                                 )}
                             </div>
                         )}
-                        
+
                         {/* Upload Resource Form */}
                         {showUploadResource && (
                             <div className="resource-upload-form">
                                 <h3>Upload Resource File</h3>
-                                
+
                                 <div className="lecture-selector">
                                     <label htmlFor="uploadLectureSelect">Select Lecture</label>
                                     <select
@@ -735,7 +736,7 @@ const Lecture = ({ user }) => {
                                         ))}
                                     </select>
                                 </div>
-                                
+
                                 <form onSubmit={uploadResourceHandler} className="resource-upload-container">
                                     <label htmlFor="resourceTitle">Title</label>
                                     <input
@@ -745,14 +746,14 @@ const Lecture = ({ user }) => {
                                         onChange={(e) => setResourceTitle(e.target.value)}
                                         required
                                     />
-                                    
+
                                     <label htmlFor="resourceDescription">Description</label>
                                     <textarea
                                         id="resourceDescription"
                                         value={resourceDescription}
                                         onChange={(e) => setResourceDescription(e.target.value)}
                                     ></textarea>
-                                    
+
                                     <label htmlFor="resourceFile">File</label>
                                     <input
                                         type="file"
@@ -760,7 +761,7 @@ const Lecture = ({ user }) => {
                                         onChange={handleResourceFileChange}
                                         required
                                     />
-                                    
+
                                     {resourceFile && (
                                         <div className="selected-file-info">
                                             <div className="file-icon">
@@ -773,19 +774,19 @@ const Lecture = ({ user }) => {
                                             </div>
                                         </div>
                                     )}
-                                    
+
                                     {resourceFilePreview && resourceFile?.type.startsWith('image/') && (
                                         <div className="file-preview">
                                             <img src={resourceFilePreview} alt="Preview" />
                                         </div>
                                     )}
-                                    
+
                                     {resourceFilePreview && resourceFile?.type.startsWith('video/') && (
                                         <div className="file-preview">
                                             <video src={resourceFilePreview} controls></video>
                                         </div>
                                     )}
-                                    
+
                                     <button
                                         type="submit"
                                         className="upload-btn upload-resource-btn"
@@ -807,7 +808,7 @@ const Lecture = ({ user }) => {
                             </div>
                         )}
                     </div>
-                    
+
                     {/* Lecture Content */}
                     <div className="right">
                         {lecLoading ? (
@@ -817,36 +818,36 @@ const Lecture = ({ user }) => {
                                 {lecture?.title ? (
                                     <div className="lecture-container">
                                         <h2>{lecture.title}</h2>
-                                        
+
                                         {user?.role !== 'admin' && (
                                             <div className="progress" style={{ width: '100%', height: '5px', backgroundColor: '#f5f5f5', borderRadius: '3px', marginBottom: '20px' }}>
-                                                <div 
-                                                    style={{ 
-                                                        width: `${progress}%`, 
-                                                        backgroundColor: '#4caf50', 
+                                                <div
+                                                    style={{
+                                                        width: `${progress}%`,
+                                                        backgroundColor: '#4caf50',
                                                         height: '100%',
                                                         borderRadius: '3px'
                                                     }}
                                                 ></div>
                                             </div>
                                         )}
-                                        
+
                                         {lecture.video && (
-                                            <video 
+                                            <video
                                                 src={`${server}/${lecture.video}`}
                                                 controls
                                                 style={{ maxWidth: '100%', marginBottom: '15px' }}
                                             ></video>
                                         )}
-                                        
+
                                         <p>{lecture.description}</p>
-                                        
+
                                         {/* Lecture Resources Section */}
                                         <div className="resources-section">
                                             <div className="resources-header">
                                                 <h3>Resources</h3>
                                             </div>
-                                            
+
                                             {loadingResources ? (
                                                 <div className="searching-indicator">
                                                     <div className="spinner"></div>
@@ -858,16 +859,16 @@ const Lecture = ({ user }) => {
                                                         <ul className="resources-list">
                                                             {resources.map((resource) => (
                                                                 <li key={resource._id} className="resource-item">
-                                                                    <a 
-                                                                        href={resource.isUploadedFile ? `${server}/${resource.url}` : resource.url} 
-                                                                        target="_blank" 
+                                                                    <a
+                                                                        href={resource.isUploadedFile ? `${server}/${resource.url}` : resource.url}
+                                                                        target="_blank"
                                                                         rel="noreferrer"
                                                                         className="resource-link"
                                                                     >
                                                                         <div className={`resource-icon resource-icon-${resource.type}`}>
                                                                             {getResourceIcon(resource.type)}
                                                                         </div>
-                                                                        
+
                                                                         <div className="resource-details">
                                                                             <h4>{resource.title}</h4>
                                                                             <p>{resource.description}</p>
@@ -880,7 +881,7 @@ const Lecture = ({ user }) => {
                                                                             </div>
                                                                         </div>
                                                                     </a>
-                                                                    
+
                                                                     {user?.role === 'admin' && (
                                                                         <button
                                                                             className="delete-resource-btn"
@@ -899,7 +900,7 @@ const Lecture = ({ user }) => {
                                                 </>
                                             )}
                                         </div>
-                                        
+
                                         {user?.role !== 'admin' && (
                                             <button
                                                 className="commonBtn"
