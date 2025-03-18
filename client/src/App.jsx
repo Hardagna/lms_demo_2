@@ -23,6 +23,13 @@ import EditQuiz from './pages/quiz/EditQuiz';
 const App = () => {
 
   const { isAuth, user } = UserData();
+  
+  // Helper function to check if user is admin or teaching assistant
+  const isAdminOrTA = () => {
+    return user?.role === 'admin' || 
+           (user?.teachingAssistantFor && user?.teachingAssistantFor.length > 0);
+  };
+  
   return (
     <>
       <BrowserRouter>
@@ -38,13 +45,16 @@ const App = () => {
           <Route path="/courses/course/:id" element={isAuth ? <CourseDetails user={user} /> : <Login />} />
           <Route path="/courses/course/lectures/:id" element={isAuth ? <Lecture user={user} /> : <Login />} />
 
-          <Route path="/admin/dashboard" element={isAuth ? <AdminDashboard user={user} /> : <Login />} />
-          <Route path="/admin/course/all" element={isAuth ? <AdminCourses user={user} /> : <Login />} />
-          <Route path="/admin/users" element={isAuth ? <AdminUsers user={user} /> : <Login />} />
-          <Route path="/admin/teaching-assistants" element={isAuth ? <AdminTeachingAssistants user={user} /> : <Login />} />
-          <Route path="/admin/quiz/create/:lectureId" element={isAuth ? <CreateQuiz /> : <Login />} />
-          <Route path="/admin/quiz/:lectureId" element={isAuth ? <ViewQuizzes /> : <Login />} />
-          <Route path="/admin/quiz/edit/:quizId" element={isAuth ? <EditQuiz /> : <Login />} />
+          {/* Admin routes - make these conditionally available to TAs where appropriate */}
+          <Route path="/admin/dashboard" element={isAuth && user?.role === 'admin' ? <AdminDashboard user={user} /> : <Login />} />
+          <Route path="/admin/course/all" element={isAuth && user?.role === 'admin' ? <AdminCourses user={user} /> : <Login />} />
+          <Route path="/admin/users" element={isAuth && user?.role === 'admin' ? <AdminUsers user={user} /> : <Login />} />
+          <Route path="/admin/teaching-assistants" element={isAuth && user?.role === 'admin' ? <AdminTeachingAssistants user={user} /> : <Login />} />
+          
+          {/* Allow both admins and TAs to access quiz creation/management */}
+          <Route path="/admin/quiz/create/:lectureId" element={isAuth && isAdminOrTA() ? <CreateQuiz /> : <Login />} />
+          <Route path="/admin/quiz/:lectureId" element={isAuth && isAdminOrTA() ? <ViewQuizzes /> : <Login />} />
+          <Route path="/admin/quiz/edit/:quizId" element={isAuth && isAdminOrTA() ? <EditQuiz /> : <Login />} />
 
         </Routes>
       </BrowserRouter>

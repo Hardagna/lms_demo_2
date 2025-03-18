@@ -1,13 +1,15 @@
 import express from 'express';
-import { isAuth, isAdmin } from '../middlewares/isAuth.js';
+import { isAuth, isAdmin, isTeachingAssistant } from '../middlewares/isAuth.js';
 import { searchResources, addResource, getLectureResources, deleteResource } from '../controllers/resources.js';
 
 const router = express.Router();
 
-// Routes for resource search and management
+// Routes for resource search and management - allow TAs to access and search
 router.get('/search', isAuth, searchResources);
-router.post('/add/:lectureId', isAuth, isAdmin, addResource);
+// Allow TAs to add resources too
+router.post('/add/:lectureId', isAuth, isTeachingAssistant, addResource);
 router.get('/lecture/:lectureId', isAuth, getLectureResources);
-router.delete('/:resourceId', isAuth, isAdmin, deleteResource);
+// Allow TAs to delete resources
+router.delete('/:resourceId', isAuth, isTeachingAssistant, deleteResource);
 
 export default router;

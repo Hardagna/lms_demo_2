@@ -26,14 +26,15 @@ export const getLectures = async (req, res) => {
     const lectures = await Lecture.find({ course: req.params.id });
     const user = await User.findById(req.user._id);
 
-    if (user.role === "admin") {
-      return res.status(200).json({ lectures, });
+    // Allow access if user is admin or teaching assistant for this course
+    if (user.role === "admin" || (user.teachingAssistantFor && user.teachingAssistantFor.includes(req.params.id))) {
+      return res.status(200).json({ lectures });
     }
 
     if (!user.subscription.includes(req.params.id)) {
       return res.status(401).json({ message: "You need to subscribe to this course to access the lectures." });
     }
-    res.status(200).json({ lectures, });
+    res.status(200).json({ lectures });
   } catch (error) {
     res.status(404).json({ message: error.message });
   }
@@ -44,14 +45,15 @@ export const getLecture = async (req, res) => {
     const lecture = await Lecture.findById(req.params.id);
     const user = await User.findById(req.user._id);
 
-    if (user.role === "admin") {
-      return res.status(200).json({ lecture, });
+    // Allow access if user is admin or teaching assistant for this course
+    if (user.role === "admin" || (user.teachingAssistantFor && user.teachingAssistantFor.includes(lecture.course.toString()))) {
+      return res.status(200).json({ lecture });
     }
 
-    if (!user.subscription.includes(lecture.course)) {
+    if (!user.subscription.includes(lecture.course.toString())) {
       return res.status(401).json({ message: "You need to subscribe to this course to access the lectures." });
     }
-    res.status(200).json({ lecture, });
+    res.status(200).json({ lecture });
   } catch (error) {
     res.status(404).json({ message: error.message });
   }

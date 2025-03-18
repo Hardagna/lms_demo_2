@@ -46,8 +46,19 @@ export const isTeachingAssistant = async (req, res, next) => {
         }
         
         // Check if user is teaching assistant for this course
-        if (req.user.teachingAssistantFor.includes(courseId)) {
+        if (req.user.teachingAssistantFor && req.user.teachingAssistantFor.includes(courseId)) {
             return next();
+        }
+
+        // If we're trying to access a lecture directly, find the lecture and check if the user is
+        // a teaching assistant for the course that lecture belongs to
+        if (req.params.id && !courseId) {
+            const Lecture = (await import('../models/Lecture.js')).default;
+            const lecture = await Lecture.findById(req.params.id);
+            
+            if (lecture && req.user.teachingAssistantFor && req.user.teachingAssistantFor.includes(lecture.course.toString())) {
+                return next();
+            }
         }
 
         return res.status(403).json({

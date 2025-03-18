@@ -446,13 +446,28 @@ const Lecture = ({ user }) => {
         }
     };
 
+    // Add a function to check if user is admin or teaching assistant for this course
+    const canManageCourse = () => {
+        // Admin can manage all courses
+        if (user?.role === 'admin') return true;
+        
+        // Check if user is a teaching assistant for this course
+        if (user?.teachingAssistantFor && Array.isArray(user.teachingAssistantFor)) {
+            // Get courseId from the URL parameters
+            const courseId = params.id; // This might be lecture ID
+            // Extract course ID if this is a lecture page
+            return user.teachingAssistantFor.includes(courseId);
+        }
+        return false;
+    };
+
     // Fetch lectures when component mounts
     useEffect(() => {
         getLectures();
-        if (user?.role !== 'admin') {
-            getProgress();
+        if (canManageCourse()) {
+            // Maybe load additional teaching assistant features here
         }
-    }, [params.id, user?.role]);
+    }, [params.id, user?.role, user?.teachingAssistantFor]);
 
     // Fetch the course teaching assistants when component mounts
     useEffect(() => {
@@ -504,7 +519,7 @@ const Lecture = ({ user }) => {
                         )}
 
                         {/* Admin Controls */}
-                        {user?.role === 'admin' && (
+                        {canManageCourse() && (
                             <div className="admin-controls">
                                 <button
                                     className={`commonBtn ${showAddForm ? 'active-btn' : ''}`}
