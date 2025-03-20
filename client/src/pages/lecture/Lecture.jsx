@@ -256,7 +256,7 @@ const Lecture = ({ user }) => {
     const deleteResourceHandler = async (resourceId) => {
         try {
             setBtnLoading(true);
-            await axios.delete(`${server}/api/admin/resource/${resourceId}`, {
+            await axios.delete(`${server}/api/resources/${resourceId}`, {
                 headers: {
                     token: localStorage.getItem('token')
                 }
@@ -319,12 +319,12 @@ const Lecture = ({ user }) => {
         }
     };
 
-    // Handle resource upload submission
+    // Update the uploadResourceHandler function
     const uploadResourceHandler = async (e) => {
         e.preventDefault();
 
-        if (!resourceFile) {
-            alert('Please select a file to upload');
+        if (!resourceTitle || !resourceFile) {
+            toast.error('Please provide a title and file');
             return;
         }
 
@@ -332,46 +332,35 @@ const Lecture = ({ user }) => {
             setUploadingResource(true);
 
             const formData = new FormData();
+            formData.append('file', resourceFile);
             formData.append('title', resourceTitle);
             formData.append('description', resourceDescription);
-            formData.append('image', resourceFile); // Using 'image' as the field name to match the server's multer setup
 
-            // Determine resource type based on file type
-            let type = 'document';
-            if (resourceFile.type.startsWith('image/')) {
-                type = 'image';
-            } else if (resourceFile.type.startsWith('video/')) {
-                type = 'video';
-            } else if (resourceFile.type.startsWith('audio/')) {
-                type = 'audio';
-            } else if (resourceFile.type === 'application/pdf') {
-                type = 'pdf';
-            }
-
-            formData.append('type', type);
-
-            const lectureId = selectedLectureForResource || lecture._id;
-
-            await axios.post(`${server}/api/admin/resource/upload/${lectureId}`, formData, {
-                headers: {
-                    token: localStorage.getItem('token'),
-                    'Content-Type': 'multipart/form-data',
+            // Use server variable and correct header format
+            const { data } = await axios.post(
+                `${server}/api/resources/upload/${selectedLectureForResource || lecture._id}`,
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        token: localStorage.getItem('token')
+                    }
                 }
-            });
+            );
 
-            // Reset form
+            toast.success('Resource uploaded successfully');
             setResourceTitle('');
             setResourceDescription('');
             setResourceFile(null);
             setResourceFilePreview('');
             setShowUploadResource(false);
 
-            // Refresh resources
-            getLectureResources(lectureId);
-
-            setUploadingResource(false);
+            // Refresh resources list
+            getLectureResources(selectedLectureForResource || lecture._id);
         } catch (error) {
-            console.log(error);
+            console.error('Upload error:', error);
+            toast.error(error.response?.data?.message || 'Failed to upload resource');
+        } finally {
             setUploadingResource(false);
         }
     };
@@ -450,7 +439,7 @@ const Lecture = ({ user }) => {
     const canManageCourse = () => {
         // Admin can manage all courses
         if (user?.role === 'admin') return true;
-        
+
         // Check if user is a teaching assistant for this course
         if (user?.teachingAssistantFor && Array.isArray(user.teachingAssistantFor)) {
             // Get courseId from the URL parameters

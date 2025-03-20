@@ -437,3 +437,58 @@ async function searchAudioBackup(query) {
     }
   ];
 }
+
+// Add this function to your existing resources.js controller
+
+// Function to handle file uploads
+export const uploadResourceFile = async (req, res) => {
+  try {
+    const { lectureId } = req.params;
+    const { title, description, type } = req.body;
+    
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+    
+    const lecture = await Lecture.findById(lectureId);
+    
+    if (!lecture) {
+      return res.status(404).json({ message: "Lecture not found" });
+    }
+    
+    // Create the resource with file information
+    const resource = await Resource.create({
+      title,
+      type: type || determineResourceType(req.file.originalname),
+      url: `/Uploads/${req.file.filename}`,
+      description,
+      lecture: lectureId,
+      isUploadedFile: true
+    });
+    
+    res.status(201).json({ 
+      message: "Resource file uploaded successfully", 
+      resource 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+    console.log(error);
+  }
+};
+
+// Helper function to determine resource type based on file extension
+function determineResourceType(filename) {
+  const extension = filename.split('.').pop().toLowerCase();
+  
+  if (['pdf', 'doc', 'docx', 'txt'].includes(extension)) {
+    return 'pdf'; // Using 'pdf' category for documents
+  } else if (['mp4', 'avi', 'mov', 'wmv'].includes(extension)) {
+    return 'video';
+  } else if (['mp3', 'wav', 'ogg'].includes(extension)) {
+    return 'audio';
+  } else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
+    return 'image';
+  } else {
+    return 'document'; // Default
+  }
+}
