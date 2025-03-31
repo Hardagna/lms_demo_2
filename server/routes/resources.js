@@ -1,6 +1,6 @@
 import express from 'express';
 import { isAuth, isAdmin, isTeachingAssistant } from '../middlewares/isAuth.js';
-import { searchResources, addResource, getLectureResources, deleteResource, uploadResourceFile } from '../controllers/resources.js';
+import { searchResources, addResource, getLectureResources, deleteResource, uploadResourceFile, copyResource } from '../controllers/resources.js';
 import { upload } from '../middlewares/multer.js';
 
 const router = express.Router();
@@ -21,5 +21,8 @@ router.post('/upload/:lectureId', isAuth, isTeachingAssistant, (req, res, next) 
         next();
     });
 }, uploadResourceFile);
+
+// Add a route for copying resources
+router.post('/copy', isAuth, isTeachingAssistant, copyResource);
 
 export default router;

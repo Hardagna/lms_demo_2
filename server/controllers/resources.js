@@ -16,8 +16,40 @@ export const searchResources = async (req, res) => {
     }
     
     let results = [];
+    let databaseResults = [];
     
-    // Based on the requested resource type, call the appropriate search function
+    // First, search for resources in the database that match the query
+    const dbSearchRegex = new RegExp(query, 'i'); // Case-insensitive search
+    const dbSearchQuery = {
+      $or: [
+        { title: { $regex: dbSearchRegex } },
+        { description: { $regex: dbSearchRegex } }
+      ]
+    };
+    
+    // Filter by type if specified
+    if (type && type !== 'all') {
+      dbSearchQuery.type = type;
+    }
+    
+    // Search the database for matching resources
+    databaseResults = await Resource.find(dbSearchQuery)
+      .populate('lecture', 'title') // Include lecture title for context
+      .limit(10);
+    
+    // Format database results to match the structure of online results
+    databaseResults = databaseResults.map(resource => ({
+      title: resource.title,
+      url: resource.url,
+      type: resource.type,
+      description: resource.description || `${resource.type} resource for ${resource.lecture?.title || 'a lecture'}`,
+      isLocalResource: true,
+      lectureId: resource.lecture?._id,
+      lectureName: resource.lecture?.title,
+      resourceId: resource._id
+    }));
+    
+    // Based on the requested resource type, call the appropriate online search function
     switch (type) {
       case "pdf":
         results = await searchPDFs(query);
@@ -60,14 +92,17 @@ export const searchResources = async (req, res) => {
         ]);
         
         results = [...pdfs, ...videos, ...webpages, ...wikipedia, ...audio];
-        
-        // Even if all search functions fail, return empty results instead of error
-        if (!results.length) {
-          return res.status(200).json({ results: [] });
-        }
     }
     
-    res.status(200).json({ results });
+    // Combine database resources with online resources
+    const combinedResults = [...databaseResults, ...results];
+    
+    // Even if all search functions fail, database results might still have content
+    if (!combinedResults.length) {
+      return res.status(200).json({ results: [] });
+    }
+    
+    res.status(200).json({ results: combinedResults });
   } catch (error) {
     console.error("Error in searchResources:", error);
     res.status(500).json({ message: `Error fetching resources: ${error.message}` });
@@ -492,3 +527,43 @@ function determineResourceType(filename) {
     return 'document'; // Default
   }
 }
+
+// Add this function to enable copying resources between lectures
+
+export const copyResource = async (req, res) => {
+  try {
+    const { sourceResourceId, targetLectureId } = req.body;
+    
+    // Find the source resource
+    const sourceResource = await Resource.findById(sourceResourceId);
+    
+    if (!sourceResource) {
+      return res.status(404).json({ message: "Source resource not found" });
+    }
+    
+    // Find the target lecture
+    const targetLecture = await Lecture.findById(targetLectureId);
+    
+    if (!targetLecture) {
+      return res.status(404).json({ message: "Target lecture not found" });
+    }
+    
+    // Create a new resource based on the source
+    const newResource = await Resource.create({
+      title: sourceResource.title,
+      type: sourceResource.type,
+      url: sourceResource.url,
+      description: sourceResource.description,
+      lecture: targetLectureId,
+      isUploadedFile: sourceResource.isUploadedFile
+    });
+    
+    res.status(201).json({
+      message: "Resource copied successfully",
+      resource: newResource
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+    console.log(error);
+  }
+};

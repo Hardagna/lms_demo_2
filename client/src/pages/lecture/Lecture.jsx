@@ -192,19 +192,24 @@ const Lecture = ({ user }) => {
         e.preventDefault();
         try {
             setSearching(true);
-            const { data } = await axios.get(`${server}/api/resources/search?query=${resourceQuery}&type=${resourceType}`, {
-                headers: {
-                    token: localStorage.getItem('token')
-                }
-            });
-
-            setSearchResults(data.results);
-            setSearching(false);
-        } catch (error) {
-            console.log(error);
-            setSearching(false);
             setSearchResults([]);
-        }
+            
+            const response = await axios.get(
+              `${server}/api/resources/search?query=${resourceQuery}&type=${resourceType}`,
+              {
+                headers: {
+                  token: localStorage.getItem('token'),
+                },
+              }
+            );
+            
+            setSearchResults(response.data.results);
+            setSearching(false);
+          } catch (error) {
+            console.error('Error searching resources:', error);
+            toast.error('Failed to search resources');
+            setSearching(false);
+          }
     };
 
     // Function to add a resource to the selected lecture
