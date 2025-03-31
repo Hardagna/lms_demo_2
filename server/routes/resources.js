@@ -11,7 +11,15 @@ router.post('/add/:lectureId', isAuth, isTeachingAssistant, addResource);
 router.get('/lecture/:lectureId', isAuth, getLectureResources);
 router.delete('/:resourceId', isAuth, isTeachingAssistant, deleteResource);
 
-// Add route for file uploads
-router.post('/upload/:lectureId', isAuth, isTeachingAssistant, upload, uploadResourceFile);
+// Correctly implement the file upload route
+router.post('/upload/:lectureId', isAuth, isTeachingAssistant, (req, res, next) => {
+    upload(req, res, (err) => {
+        if (err) {
+            // Error is already handled in the upload middleware
+            return;
+        }
+        next();
+    });
+}, uploadResourceFile);
 
 export default router;
