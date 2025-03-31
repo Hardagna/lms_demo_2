@@ -193,23 +193,29 @@ const Lecture = ({ user }) => {
         try {
             setSearching(true);
             setSearchResults([]);
-            
+
             const response = await axios.get(
-              `${server}/api/resources/search?query=${resourceQuery}&type=${resourceType}`,
-              {
-                headers: {
-                  token: localStorage.getItem('token'),
-                },
-              }
+                `${server}/api/resources/search?query=${resourceQuery}&type=${resourceType}`,
+                {
+                    headers: {
+                        token: localStorage.getItem('token'),
+                    },
+                }
             );
-            
-            setSearchResults(response.data.results);
+
+            if (response.data.results) {
+                setSearchResults(response.data.results);
+            } else {
+                setSearchResults([]);
+                toast.info('No resources found for your query');
+            }
+
             setSearching(false);
-          } catch (error) {
+        } catch (error) {
             console.error('Error searching resources:', error);
             toast.error('Failed to search resources');
             setSearching(false);
-          }
+        }
     };
 
     // Function to add a resource to the selected lecture
@@ -280,21 +286,21 @@ const Lecture = ({ user }) => {
     const getResourceIcon = (type) => {
         switch (type) {
             case 'pdf':
-                return <i className="fas fa-file-pdf resource-icon resource-icon-pdf"></i>;
+                return <i className="fa fa-file-pdf-o" aria-hidden="true"></i>;
             case 'video':
-                return <i className="fas fa-video resource-icon resource-icon-video"></i>;
+                return <i className="fa fa-video-camera" aria-hidden="true"></i>;
             case 'webpage':
-                return <i className="fas fa-globe resource-icon resource-icon-webpage"></i>;
+                return <i className="fa fa-globe" aria-hidden="true"></i>;
             case 'wikipedia':
-                return <i className="fas fa-book resource-icon resource-icon-wikipedia"></i>;
+                return <i className="fa fa-wikipedia-w" aria-hidden="true"></i>;
             case 'audio':
-                return <i className="fas fa-headphones resource-icon resource-icon-audio"></i>;
+                return <i className="fa fa-volume-up" aria-hidden="true"></i>;
             case 'document':
-                return <i className="fas fa-file-alt resource-icon resource-icon-document"></i>;
+                return <i className="fa fa-file-text-o" aria-hidden="true"></i>;
             case 'image':
-                return <i className="fas fa-image resource-icon resource-icon-image"></i>;
+                return <i className="fa fa-file-image-o" aria-hidden="true"></i>;
             default:
-                return <i className="fas fa-link resource-icon"></i>;
+                return <i className="fa fa-file" aria-hidden="true"></i>;
         }
     };
 
@@ -372,31 +378,45 @@ const Lecture = ({ user }) => {
 
     // Render resource link appropriately (external URL vs local file)
     const renderResourceLink = (resource) => {
-        // For uploaded files
-        if (resource.isUploadedFile) {
+        if (resource.isLocalResource) {
+            // Fix URL path issues with uploaded resources
+            let fullUrl = resource.url;
+            
+            // If URL is relative and not correctly formatted, fix it
+            if (!fullUrl.startsWith('http') && !fullUrl.startsWith('/')) {
+                fullUrl = `/${fullUrl}`;
+            } else if (fullUrl.startsWith('//')) {
+                // Fix double slash issue
+                fullUrl = fullUrl.replace('//', '/');
+            }
+            
+            // Make sure it points to the server
+            if (!fullUrl.startsWith('http')) {
+                fullUrl = `${server}${fullUrl}`;
+            }
+            
             return (
-                <a
-                    href={`${server}/${resource.url}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="preview-link"
+                <a 
+                    href={fullUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="resource-link"
                 >
-                    <i className="fas fa-external-link-alt"></i> View File
+                    View Resource
+                </a>
+            );
+        } else {
+            return (
+                <a 
+                    href={resource.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="resource-link"
+                >
+                    {truncateUrl(resource.url)}
                 </a>
             );
         }
-
-        // For external resources
-        return (
-            <a
-                href={resource.url}
-                target="_blank"
-                rel="noreferrer"
-                className="preview-link"
-            >
-                <i className="fas fa-external-link-alt"></i> Visit Resource
-            </a>
-        );
     };
 
     const fetchComments = async () => {
@@ -473,6 +493,128 @@ const Lecture = ({ user }) => {
     useEffect(() => {
         fetchComments();
     }, [params.id]);
+
+    // Update the renderResource function to handle local resources differently
+    const renderResource = (resource, index) => {
+        return (
+            <div key={index} className="resource-result-item">
+                <div className="resource-info">
+                    <span className="resource-icon">{getResourceIcon(resource.type)}</span>
+                    <div className="resource-details">
+                        <h4>{resource.title}</h4>
+                        <p>{resource.description}</p>
+                        {resource.isLocalResource && (
+                            <p className="local-resource-info">
+                                <span className="badge bg-info">Local Resource</span>
+                                {resource.lectureName && <span> - From lecture: {resource.lectureName}</span>}
+                            </p>
+                        )}
+                        {renderResourceLink(resource)}
+                    </div>
+                </div>
+                <div className="resource-actions">
+                    {resource.isLocalResource ? (
+                        <>
+                            {/* Don't show add button if it's already in the current lecture */}
+                            {selectedLectureForResource &&
+                                resource.lectureId !== selectedLectureForResource && (
+                                    <button
+                                        onClick={() => copyLocalResourceHandler(resource)}
+                                        className="btn btn-sm btn-primary"
+                                        disabled={btnLoading}
+                                    >
+                                        Add to Current Lecture
+                                    </button>
+                                )}
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => addResourceHandler(resource)}
+                            className="btn btn-sm btn-primary"
+                            disabled={!selectedLectureForResource || btnLoading}
+                        >
+                            Add to Lecture
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    // Add a function to copy resources between lectures
+    const copyLocalResourceHandler = async (resource) => {
+        try {
+            setBtnLoading(true);
+            console.log("Resource object:", resource); // Debug log
+
+            // Check if we have the required fields
+            if (!resource.resourceId || !selectedLectureForResource) {
+                console.error("Missing resource data:", { 
+                    resourceId: resource.resourceId, 
+                    targetLecture: selectedLectureForResource 
+                });
+                toast.error('Missing resource information or target lecture');
+                setBtnLoading(false);
+                return;
+            }
+
+            // Make API call to copy the resource to the selected lecture
+            const response = await axios.post(
+                `${server}/api/resources/copy`,
+                {
+                    sourceResourceId: resource.resourceId,
+                    targetLectureId: selectedLectureForResource
+                },
+                {
+                    headers: {
+                        token: localStorage.getItem('token'),
+                        'Content-Type': 'application/json'
+                    },
+                }
+            );
+
+            console.log("Copy response:", response.data); // Debug log
+            toast.success('Resource added to lecture successfully');
+
+            // Refresh the resources for the current lecture
+            await getLectureResources(selectedLectureForResource);
+
+            setBtnLoading(false);
+        } catch (error) {
+            console.error('Error copying resource:', error);
+            // More detailed error logging
+            if (error.response) {
+                console.error('Server response:', error.response.data);
+            }
+            
+            // More specific error message based on the response
+            const errorMessage = error.response?.data?.message || 'Failed to add resource to lecture';
+            toast.error(errorMessage);
+            setBtnLoading(false);
+        }
+    };
+
+    // Helper function to normalize file URLs
+    const normalizeFileUrl = (url) => {
+        if (!url) return '';
+        
+        // Fix double slash issues
+        if (url.startsWith('//')) {
+            url = url.replace('//', '/');
+        }
+        
+        // If URL is relative and not correctly formatted, fix it
+        if (!url.startsWith('http') && !url.startsWith('/')) {
+            url = `/${url}`;
+        }
+        
+        // If it's a relative URL, add the server base
+        if (!url.startsWith('http')) {
+            url = `${server}${url}`;
+        }
+        
+        return url;
+    };
 
     return (
         <div className="lec-page">
@@ -604,125 +746,83 @@ const Lecture = ({ user }) => {
 
                         {/* Search Resources Form */}
                         {showResourceSearch && (
-                            <div className="resource-search-form">
-                                <h3>Search Online Resources</h3>
-
-                                <div className="lecture-selector">
-                                    <label htmlFor="selectLecture">Select Lecture</label>
-                                    <select
-                                        id="selectLecture"
-                                        value={selectedLectureForResource || lecture._id || ''}
-                                        onChange={(e) => setSelectedLectureForResource(e.target.value)}
-                                    >
-                                        {lectures.map((lec) => (
-                                            <option key={lec._id} value={lec._id}>
-                                                {lec.title}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <form onSubmit={searchResourcesHandler}>
-                                    <div className="search-input-container">
+                            <div className="resource-search-container">
+                                <h4>Search Resources</h4>
+                                <form onSubmit={searchResourcesHandler} className="resource-search-form">
+                                    <div className="form-group mb-3">
+                                        <label htmlFor="resourceQuery">Search Query</label>
                                         <input
                                             type="text"
-                                            placeholder="Search for learning resources..."
+                                            className="form-control"
+                                            id="resourceQuery"
                                             value={resourceQuery}
                                             onChange={(e) => setResourceQuery(e.target.value)}
+                                            placeholder="Enter search terms"
                                             required
                                         />
+                                    </div>
 
+                                    <div className="form-group mb-3">
+                                        <label htmlFor="resourceType">Resource Type</label>
                                         <select
+                                            className="form-control"
+                                            id="resourceType"
                                             value={resourceType}
                                             onChange={(e) => setResourceType(e.target.value)}
                                         >
                                             <option value="all">All Types</option>
-                                            <option value="pdf">PDF Documents</option>
+                                            <option value="pdf">PDF/Documents</option>
                                             <option value="video">Videos</option>
-                                            <option value="webpage">Web Pages</option>
+                                            <option value="webpage">Webpages</option>
                                             <option value="wikipedia">Wikipedia</option>
                                             <option value="audio">Audio</option>
+                                            <option value="image">Images</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group mb-3">
+                                        <label htmlFor="selectedLecture">Add to Lecture</label>
+                                        <select
+                                            className="form-control"
+                                            id="selectedLecture"
+                                            value={selectedLectureForResource}
+                                            onChange={(e) => setSelectedLectureForResource(e.target.value)}
+                                            required
+                                        >
+                                            <option value="">Select a Lecture</option>
+                                            {lectures.map((lec) => (
+                                                <option key={lec._id} value={lec._id}>
+                                                    {lec.title}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
 
                                     <button
                                         type="submit"
-                                        className="search-btn"
-                                        disabled={searching || !resourceQuery}
+                                        className="btn btn-primary"
+                                        disabled={searching || !resourceQuery || !selectedLectureForResource}
                                     >
-                                        {searching ? (
-                                            <>
-                                                <i className="fas fa-circle-notch fa-spin"></i>
-                                                Searching...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="fas fa-search"></i>
-                                                Search
-                                            </>
-                                        )}
+                                        {searching ? 'Searching...' : 'Search'}
                                     </button>
                                 </form>
 
-                                {/* Search Results */}
-                                {searching ? (
-                                    <div className="searching-indicator">
-                                        <div className="spinner"></div>
-                                        <p>Searching for resources...</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {searchResults.length > 0 ? (
-                                            <ul className="resource-results-list">
-                                                {searchResults.map((resource, index) => (
-                                                    <li key={index} className="resource-result-item">
-                                                        <div className="resource-result-info">
-                                                            <div className={`resource-icon resource-icon-${resource.type}`}>
-                                                                {getResourceIcon(resource.type)}
-                                                            </div>
-
-                                                            <div className="resource-details">
-                                                                <h4>{resource.title}</h4>
-                                                                <p>{resource.description}</p>
-
-                                                                <div className="resource-url">
-                                                                    <span>{truncateUrl(resource.url)}</span>
-                                                                    <a
-                                                                        href={resource.url}
-                                                                        target="_blank"
-                                                                        rel="noreferrer"
-                                                                        className="preview-link"
-                                                                    >
-                                                                        <i className="fas fa-external-link-alt"></i> Preview
-                                                                    </a>
-                                                                </div>
-
-                                                                {resource.thumbnail && (
-                                                                    <div className="resource-thumbnail">
-                                                                        <img src={resource.thumbnail} alt={resource.title} />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        <button
-                                                            className="add-resource-btn"
-                                                            onClick={() => addResourceHandler(resource)}
-                                                        >
-                                                            <i className="fas fa-plus"></i> Add
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            searchResults === null || (resourceQuery && searchResults.length === 0) ? (
-                                                <div className="no-results">
-                                                    <p>No resources found. Try a different search term.</p>
-                                                </div>
-                                            ) : null
-                                        )}
-                                    </>
-                                )}
+                                <div className="search-results-container mt-4">
+                                    <h5>Search Results</h5>
+                                    {searching ? (
+                                        <div className="text-center">
+                                            <div className="spinner-border" role="status">
+                                                <span className="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    ) : searchResults.length > 0 ? (
+                                        <div className="search-results-list">
+                                            {searchResults.map((resource, index) => renderResource(resource, index))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-muted">No results found</p>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -869,7 +969,7 @@ const Lecture = ({ user }) => {
                                                             {resources.map((resource) => (
                                                                 <li key={resource._id} className="resource-item">
                                                                     <a
-                                                                        href={resource.isUploadedFile ? `${server}/${resource.url}` : resource.url}
+                                                                        href={resource.isUploadedFile ? normalizeFileUrl(resource.url) : resource.url}
                                                                         target="_blank"
                                                                         rel="noreferrer"
                                                                         className="resource-link"

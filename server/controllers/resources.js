@@ -38,16 +38,25 @@ export const searchResources = async (req, res) => {
       .limit(10);
     
     // Format database results to match the structure of online results
-    databaseResults = databaseResults.map(resource => ({
-      title: resource.title,
-      url: resource.url,
-      type: resource.type,
-      description: resource.description || `${resource.type} resource for ${resource.lecture?.title || 'a lecture'}`,
-      isLocalResource: true,
-      lectureId: resource.lecture?._id,
-      lectureName: resource.lecture?.title,
-      resourceId: resource._id
-    }));
+    databaseResults = databaseResults.map(resource => {
+      // Normalize the URL to prevent path issues
+      let normalizedUrl = resource.url;
+      if (normalizedUrl.startsWith('//')) {
+        normalizedUrl = normalizedUrl.replace('//', '/');
+      }
+      
+      return {
+        title: resource.title,
+        url: normalizedUrl,
+        type: resource.type,
+        description: resource.description || `${resource.type} resource for ${resource.lecture?.title || 'a lecture'}`,
+        isLocalResource: true,
+        lectureId: resource.lecture?._id?.toString(),  // Ensure it's a string
+        lectureName: resource.lecture?.title,
+        resourceId: resource._id.toString(),  // Ensure it's a string
+        isUploadedFile: resource.isUploadedFile || false
+      };
+    });
     
     // Based on the requested resource type, call the appropriate online search function
     switch (type) {
@@ -530,14 +539,24 @@ function determineResourceType(filename) {
 
 // Add this function to enable copying resources between lectures
 
+// Update the copyResource function for better error handling
 export const copyResource = async (req, res) => {
   try {
     const { sourceResourceId, targetLectureId } = req.body;
+    
+    console.log("Copy resource request:", req.body);  // Debug log
+    
+    if (!sourceResourceId || !targetLectureId) {
+      return res.status(400).json({ 
+        message: "Source resource ID and target lecture ID are required" 
+      });
+    }
     
     // Find the source resource
     const sourceResource = await Resource.findById(sourceResourceId);
     
     if (!sourceResource) {
+      console.log(`Resource with ID ${sourceResourceId} not found`);
       return res.status(404).json({ message: "Source resource not found" });
     }
     
@@ -545,25 +564,42 @@ export const copyResource = async (req, res) => {
     const targetLecture = await Lecture.findById(targetLectureId);
     
     if (!targetLecture) {
+      console.log(`Lecture with ID ${targetLectureId} not found`);
       return res.status(404).json({ message: "Target lecture not found" });
     }
     
+    console.log("Found source resource:", sourceResource);  // Debug log
+    
+    // Check if this resource already exists in the target lecture
+    const existingResource = await Resource.findOne({
+      title: sourceResource.title,
+      lecture: targetLectureId
+    });
+    
+    if (existingResource) {
+      return res.status(400).json({ 
+        message: "This resource already exists in the selected lecture" 
+      });
+    }
+    
     // Create a new resource based on the source
-    const newResource = await Resource.create({
+    const newResource = new Resource({
       title: sourceResource.title,
       type: sourceResource.type,
       url: sourceResource.url,
-      description: sourceResource.description,
+      description: sourceResource.description || `Resource copied from another lecture`,
       lecture: targetLectureId,
       isUploadedFile: sourceResource.isUploadedFile
     });
+    
+    await newResource.save();
     
     res.status(201).json({
       message: "Resource copied successfully",
       resource: newResource
     });
   } catch (error) {
+    console.error("Error copying resource:", error);
     res.status(500).json({ message: error.message });
-    console.log(error);
   }
 };

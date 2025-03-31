@@ -22,6 +22,8 @@ router.post('/upload/:lectureId', isAuth, isTeachingAssistant, (req, res, next) 
     });
 }, uploadResourceFile);
 
+// Ensure the copy route is properly defined
+
 // Add a route for copying resources
 router.post('/copy', isAuth, isTeachingAssistant, copyResource);
 

@@ -15,7 +15,13 @@ const port = process.env.PORT;
 app.get('/', (req, res) => {
     res.send('Server is ready');
 });
-app.use('/Uploads',express.static('Uploads'));
+app.use('/Uploads', express.static('Uploads'));
+
+app.use((req, res, next) => {
+    // Add appropriate headers to allow resource loading
+    res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'");
+    next();
+});
 
 import userRoutes from './routes/user.js';
 import courseRoutes from './routes/course.js';
