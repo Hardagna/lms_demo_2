@@ -1049,3 +1049,21 @@
 .resources-section .teaching-assistants-list li:last-child {
   margin-bottom: 0;
 }
+
+.resource-item {
+  transition: all 0.2s ease;
+  background-color: #f8f9fa;
+}
+
+.resource-item:hover {
+  background-color: #e9ecef;
+}
+
+.resource-actions {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.resource-item:hover .resource-actions {
+  opacity: 1;
+}

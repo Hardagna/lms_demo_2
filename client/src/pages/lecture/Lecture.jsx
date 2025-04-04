@@ -263,22 +263,39 @@ const Lecture = ({ user }) => {
         }
     };
 
-    // Function to delete a resource
+    // Enhance the deleteResourceHandler function
     const deleteResourceHandler = async (resourceId) => {
         try {
-            setBtnLoading(true);
-            await axios.delete(`${server}/api/resources/${resourceId}`, {
-                headers: {
-                    token: localStorage.getItem('token')
-                }
-            });
+            // Confirm before deletion
+            if (!window.confirm("Are you sure you want to delete this resource? This action cannot be undone.")) {
+                return;
+            }
 
-            // Refresh resources
-            getLectureResources(lecture._id);
-            setBtnLoading(false);
+            setLoadingResources(true);
+            
+            const response = await axios.delete(
+                `/api/resources/${resourceId}`,
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        token: localStorage.getItem("token"),
+                    },
+                }
+            );
+
+            if (response.data) {
+                toast.success("Resource deleted successfully");
+                
+                // Update the resources list by filtering out the deleted resource
+                setResources(prevResources => 
+                    prevResources.filter(resource => resource._id !== resourceId)
+                );
+            }
         } catch (error) {
-            console.log(error);
-            setBtnLoading(false);
+            toast.error(error.response?.data?.message || "Failed to delete resource");
+            console.error("Error deleting resource:", error);
+        } finally {
+            setLoadingResources(false);
         }
     };
 
@@ -462,16 +479,21 @@ const Lecture = ({ user }) => {
 
     // Add a function to check if user is admin or teaching assistant for this course
     const canManageCourse = () => {
-        // Admin can manage all courses
-        if (user?.role === 'admin') return true;
-
-        // Check if user is a teaching assistant for this course
-        if (user?.teachingAssistantFor && Array.isArray(user.teachingAssistantFor)) {
-            // Get courseId from the URL parameters
-            const courseId = params.id; // This might be lecture ID
-            // Extract course ID if this is a lecture page
-            return user.teachingAssistantFor.includes(courseId);
+        // If no user or lecture data is available yet, return false
+        if (!user || !lecture || !lecture.course) {
+            return false;
         }
+        
+        // User is admin
+        if (user.role === 'admin') {
+            return true;
+        }
+        
+        // User is teaching assistant for this course
+        if (user.teachingAssistantFor && Array.isArray(user.teachingAssistantFor)) {
+            return user.teachingAssistantFor.includes(lecture.course);
+        }
+        
         return false;
     };
 
@@ -494,46 +516,40 @@ const Lecture = ({ user }) => {
         fetchComments();
     }, [params.id]);
 
-    // Update the renderResource function to handle local resources differently
+    // Enhance the renderResource function to include delete button for resources
+    // when user is admin or teaching assistant
     const renderResource = (resource, index) => {
+        const isLocalFile = resource.isUploadedFile;
+        
         return (
-            <div key={index} className="resource-result-item">
-                <div className="resource-info">
-                    <span className="resource-icon">{getResourceIcon(resource.type)}</span>
-                    <div className="resource-details">
-                        <h4>{resource.title}</h4>
-                        <p>{resource.description}</p>
-                        {resource.isLocalResource && (
-                            <p className="local-resource-info">
-                                <span className="badge bg-info">Local Resource</span>
-                                {resource.lectureName && <span> - From lecture: {resource.lectureName}</span>}
-                            </p>
-                        )}
+            <div key={index} className="resource-item mb-3 p-3 border rounded d-flex justify-content-between align-items-center">
+                <div>
+                    <div className="d-flex align-items-center">
+                        {getResourceIcon(resource.type)}
+                        <span className="ms-2 fw-bold">{resource.title}</span>
+                    </div>
+                    {resource.description && (
+                        <div className="small text-muted mt-1">{resource.description}</div>
+                    )}
+                    <div className="mt-1">
                         {renderResourceLink(resource)}
                     </div>
                 </div>
+                
+                {/* Resource action buttons */}
                 <div className="resource-actions">
-                    {resource.isLocalResource ? (
-                        <>
-                            {/* Don't show add button if it's already in the current lecture */}
-                            {selectedLectureForResource &&
-                                resource.lectureId !== selectedLectureForResource && (
-                                    <button
-                                        onClick={() => copyLocalResourceHandler(resource)}
-                                        className="btn btn-sm btn-primary"
-                                        disabled={btnLoading}
-                                    >
-                                        Add to Current Lecture
-                                    </button>
-                                )}
-                        </>
-                    ) : (
-                        <button
-                            onClick={() => addResourceHandler(resource)}
-                            className="btn btn-sm btn-primary"
-                            disabled={!selectedLectureForResource || btnLoading}
+                    {/* Show delete button only for admin or teaching assistant */}
+                    {canManageCourse() && (
+                        <button 
+                            onClick={() => deleteResourceHandler(resource._id)}
+                            className="btn btn-sm btn-danger ms-2"
+                            disabled={loadingResources}
                         >
-                            Add to Lecture
+                            {loadingResources ? (
+                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            ) : (
+                                <i className="fas fa-trash-alt"></i>
+                            )}
                         </button>
                     )}
                 </div>
