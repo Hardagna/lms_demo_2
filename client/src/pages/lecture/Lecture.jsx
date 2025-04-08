@@ -57,11 +57,6 @@ const Lecture = ({ user }) => {
     const params = useParams();
     const navigate = useNavigate();
 
-    // Add new state variables after existing state variables
-    const [dateFilter, setDateFilter] = useState('all');
-    const [sortBy, setSortBy] = useState('relevance');
-    const [filteredResults, setFilteredResults] = useState([]);
-
     async function getLectures() {
         try {
             setLoading(true);
@@ -200,15 +195,8 @@ const Lecture = ({ user }) => {
             setSearching(true);
             setSearchResults([]);
 
-            const searchParams = new URLSearchParams({
-                query: resourceQuery,
-                type: resourceType,
-                date: dateFilter,
-                sort: sortBy
-            });
-
             const response = await axios.get(
-                `${server}/api/resources/search?${searchParams.toString()}`,
+                `${server}/api/resources/search?query=${resourceQuery}&type=${resourceType}`,
                 {
                     headers: {
                         token: localStorage.getItem('token'),
@@ -216,25 +204,17 @@ const Lecture = ({ user }) => {
                 }
             );
 
-            if (response.data && Array.isArray(response.data.results)) {
-                const filtered = applyFilters(response.data.results);
-                setSearchResults(filtered);
-                setFilteredResults(filtered);
-                
-                if (filtered.length === 0) {
-                    toast.info('No resources found for your query');
-                }
+            if (response.data.results) {
+                setSearchResults(response.data.results);
             } else {
                 setSearchResults([]);
-                setFilteredResults([]);
-                toast.error('Invalid response format from server');
+                toast.info('No resources found for your query');
             }
+
+            setSearching(false);
         } catch (error) {
             console.error('Error searching resources:', error);
-            toast.error(error.response?.data?.message || 'Failed to search resources');
-            setSearchResults([]);
-            setFilteredResults([]);
-        } finally {
+            toast.error('Failed to search resources');
             setSearching(false);
         }
     };
@@ -515,85 +495,21 @@ const Lecture = ({ user }) => {
         fetchComments();
     }, [params.id]);
 
-    // Add this filter function before the searchResourcesHandler
-    const applyFilters = (results) => {
-        let filtered = [...results];
-
-        // Apply date filter
-        if (dateFilter !== 'all') {
-            const now = new Date();
-            filtered = filtered.filter(result => {
-                if (!result.publishedDate) return true;
-                const date = new Date(result.publishedDate);
-                switch (dateFilter) {
-                    case 'day':
-                        return now - date <= 86400000;
-                    case 'week':
-                        return now - date <= 604800000;
-                    case 'month':
-                        return now - date <= 2592000000;
-                    case 'year':
-                        return now - date <= 31536000000;
-                    default:
-                        return true;
-                }
-            });
-        }
-
-        // Apply sorting
-        filtered.sort((a, b) => {
-            switch (sortBy) {
-                case 'date':
-                    return new Date(b.publishedDate || 0) - new Date(a.publishedDate || 0);
-                case 'relevance':
-                    return (b.relevanceScore || 0) - (a.relevanceScore || 0);
-                default:
-                    return 0;
-            }
-        });
-
-        return filtered;
-    };
-
     // Update the renderResource function to handle local resources differently
     const renderResource = (resource, index) => {
-        const formattedDate = resource.publishedDate 
-            ? new Date(resource.publishedDate).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            })
-            : null;
-
         return (
             <div key={index} className="resource-result-item">
                 <div className="resource-info">
                     <span className="resource-icon">{getResourceIcon(resource.type)}</span>
                     <div className="resource-details">
                         <h4>{resource.title}</h4>
-                        <div className="resource-metadata">
-                            {formattedDate && (
-                                <span className="resource-date">
-                                    <i className="far fa-calendar-alt"></i> {formattedDate}
-                                </span>
-                            )}
-                            {resource.language && (
-                                <span className="resource-language">
-                                    <i className="fas fa-globe"></i> {resource.language.toUpperCase()}
-                                </span>
-                            )}
-                            {resource.fileSize && (
-                                <span className="resource-size">
-                                    <i className="fas fa-file"></i> {resource.fileSize}
-                                </span>
-                            )}
-                            {resource.domain && (
-                                <span className="resource-domain">
-                                    <i className="fas fa-link"></i> {resource.domain}
-                                </span>
-                            )}
-                        </div>
                         <p>{resource.description}</p>
+                        {resource.isLocalResource && (
+                            <p className="local-resource-info">
+                                <span className="badge bg-info">Local Resource</span>
+                                {resource.lectureName && <span> - From lecture: {resource.lectureName}</span>}
+                            </p>
+                        )}
                         {renderResourceLink(resource)}
                     </div>
                 </div>
@@ -700,123 +616,6 @@ const Lecture = ({ user }) => {
 
         return url;
     };
-
-    // Replace the existing resource search form with this enhanced version
-    const renderResourceSearchForm = () => (
-        <div className="resource-search-container">
-            <h4>Search Resources</h4>
-            <form onSubmit={searchResourcesHandler} className="resource-search-form">
-                {/* Existing query and type inputs */}
-                <div className="form-group mb-3">
-                    <label htmlFor="resourceQuery">Search Query</label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        id="resourceQuery"
-                        value={resourceQuery}
-                        onChange={(e) => setResourceQuery(e.target.value)}
-                        placeholder="Enter search terms"
-                        required
-                    />
-                </div>
-
-                <div className="form-group mb-3">
-                    <label htmlFor="resourceType">Resource Type</label>
-                    <select
-                        className="form-control"
-                        id="resourceType"
-                        value={resourceType}
-                        onChange={(e) => setResourceType(e.target.value)}
-                    >
-                        <option value="all">All Types</option>
-                        <option value="pdf">PDF/Documents</option>
-                        <option value="video">Videos</option>
-                        <option value="webpage">Webpages</option>
-                        <option value="wikipedia">Wikipedia</option>
-                        <option value="audio">Audio</option>
-                        <option value="image">Images</option>
-                    </select>
-                </div>
-
-                {/* New filter controls */}
-                <div className="filters-section">
-                    <div className="form-group mb-3">
-                        <label htmlFor="dateFilter">Date</label>
-                        <select
-                            className="form-control"
-                            id="dateFilter"
-                            value={dateFilter}
-                            onChange={(e) => setDateFilter(e.target.value)}
-                        >
-                            <option value="all">Any time</option>
-                            <option value="day">Past 24 hours</option>
-                            <option value="week">Past week</option>
-                            <option value="month">Past month</option>
-                            <option value="year">Past year</option>
-                        </select>
-                    </div>
-
-                    <div className="form-group mb-3">
-                        <label htmlFor="sortBy">Sort by</label>
-                        <select
-                            className="form-control"
-                            id="sortBy"
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                        >
-                            <option value="relevance">Relevance</option>
-                            <option value="date">Date</option>
-                        </select>
-                    </div>
-                    {/* Remove language filter select element */}
-                </div>
-
-                {/* Existing buttons */}
-                <div className="form-group mb-3">
-                    <label htmlFor="selectedLecture">Add to Lecture</label>
-                    <select
-                        className="form-control"
-                        id="selectedLecture"
-                        value={selectedLectureForResource}
-                        onChange={(e) => setSelectedLectureForResource(e.target.value)}
-                        required
-                    >
-                        <option value="">Select a Lecture</option>
-                        {lectures.map((lec) => (
-                            <option key={lec._id} value={lec._id}>
-                                {lec.title}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={searching || !resourceQuery || !selectedLectureForResource}
-                >
-                    {searching ? 'Searching...' : 'Search'}
-                </button>
-            </form>
-
-            <div className="search-results-container mt-4">
-                <h5>Search Results</h5>
-                {searching ? (
-                    <div className="text-center">
-                        <div className="spinner-border" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                ) : searchResults.length > 0 ? (
-                    <div className="search-results-list">
-                        {searchResults.map((resource, index) => renderResource(resource, index))}
-                    </div>
-                ) : (
-                    <p className="text-muted">No results found</p>
-                )}
-            </div>
-        </div>
-    );
 
     return (
         <div className="lec-page">
@@ -947,7 +746,86 @@ const Lecture = ({ user }) => {
                         )}
 
                         {/* Search Resources Form */}
-                        {showResourceSearch && renderResourceSearchForm()}
+                        {showResourceSearch && (
+                            <div className="resource-search-container">
+                                <h4>Search Resources</h4>
+                                <form onSubmit={searchResourcesHandler} className="resource-search-form">
+                                    <div className="form-group mb-3">
+                                        <label htmlFor="resourceQuery">Search Query</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            id="resourceQuery"
+                                            value={resourceQuery}
+                                            onChange={(e) => setResourceQuery(e.target.value)}
+                                            placeholder="Enter search terms"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="form-group mb-3">
+                                        <label htmlFor="resourceType">Resource Type</label>
+                                        <select
+                                            className="form-control"
+                                            id="resourceType"
+                                            value={resourceType}
+                                            onChange={(e) => setResourceType(e.target.value)}
+                                        >
+                                            <option value="all">All Types</option>
+                                            <option value="pdf">PDF/Documents</option>
+                                            <option value="video">Videos</option>
+                                            <option value="webpage">Webpages</option>
+                                            <option value="wikipedia">Wikipedia</option>
+                                            <option value="audio">Audio</option>
+                                            <option value="image">Images</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group mb-3">
+                                        <label htmlFor="selectedLecture">Add to Lecture</label>
+                                        <select
+                                            className="form-control"
+                                            id="selectedLecture"
+                                            value={selectedLectureForResource}
+                                            onChange={(e) => setSelectedLectureForResource(e.target.value)}
+                                            required
+                                        >
+                                            <option value="">Select a Lecture</option>
+                                            {lectures.map((lec) => (
+                                                <option key={lec._id} value={lec._id}>
+                                                    {lec.title}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary"
+                                        disabled={searching || !resourceQuery || !selectedLectureForResource}
+                                    >
+                                        {searching ? 'Searching...' : 'Search'}
+                                    </button>
+                                </form>
+
+                                <div className="search-results-container mt-4">
+                                    <h5>Search Results</h5>
+                                    {searching ? (
+                                        <div className="text-center">
+                                            <div className="spinner-border" role="status">
+                                                <span className="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    ) : searchResults.length > 0 ? (
+                                        <div className="search-results-list">
+                                            {searchResults.map((resource, index) => renderResource(resource, index))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-muted">No results found</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Upload Resource Form */}
                         {showUploadResource && (

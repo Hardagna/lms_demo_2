@@ -9,7 +9,7 @@ dotenv.config();
 // Main function to search web resources
 export const searchResources = async (req, res) => {
   try {
-    const { query, type, date, sort } = req.query; // Remove language from destructuring
+    const { query, type } = req.query;
     
     if (!query) {
       return res.status(400).json({ message: "Search query is required" });
@@ -18,116 +18,103 @@ export const searchResources = async (req, res) => {
     let results = [];
     let databaseResults = [];
     
-    try {
-      // First, search for resources in the database that match the query
-      const dbSearchRegex = new RegExp(query, 'i');
-      const dbSearchQuery = {
-        $or: [
-          { title: { $regex: dbSearchRegex } },
-          { description: { $regex: dbSearchRegex } }
-        ]
-      };
-      
-      if (type && type !== 'all') {
-        dbSearchQuery.type = type;
+    // First, search for resources in the database that match the query
+    const dbSearchRegex = new RegExp(query, 'i'); // Case-insensitive search
+    const dbSearchQuery = {
+      $or: [
+        { title: { $regex: dbSearchRegex } },
+        { description: { $regex: dbSearchRegex } }
+      ]
+    };
+    
+    // Filter by type if specified
+    if (type && type !== 'all') {
+      dbSearchQuery.type = type;
+    }
+    
+    // Search the database for matching resources
+    databaseResults = await Resource.find(dbSearchQuery)
+      .populate('lecture', 'title') // Include lecture title for context
+      .limit(10);
+    
+    // Format database results to match the structure of online results
+    databaseResults = databaseResults.map(resource => {
+      // Normalize the URL to prevent path issues
+      let normalizedUrl = resource.url;
+      if (normalizedUrl.startsWith('//')) {
+        normalizedUrl = normalizedUrl.replace('//', '/');
       }
       
-      // Search the database and populate lecture information
-      const dbResources = await Resource.find(dbSearchQuery)
-        .populate('lecture', 'title')
-        .limit(10);
-
-      // Format database results
-      databaseResults = dbResources.map(resource => ({
+      return {
         title: resource.title,
-        url: resource.url,
+        url: normalizedUrl,
         type: resource.type,
-        description: resource.description,
-        publishedDate: resource.createdAt,
+        description: resource.description || `${resource.type} resource for ${resource.lecture?.title || 'a lecture'}`,
         isLocalResource: true,
-        lectureId: resource.lecture?._id?.toString(),
+        lectureId: resource.lecture?._id?.toString(),  // Ensure it's a string
         lectureName: resource.lecture?.title,
-        resourceId: resource._id.toString(),
-        isUploadedFile: resource.isUploadedFile || false,
-        domain: 'Local Resource',
-        language: 'en',
-        fileSize: resource.isUploadedFile ? `${Math.round(resource.size / 1024)} KB` : null,
-        relevanceScore: 1
-      }));
-    } catch (dbError) {
-      console.error("Database search error:", dbError);
-      databaseResults = [];
-    }
-
-    // Perform online search based on type
-    try {
-      switch (type) {
-        case "pdf":
-          results = await searchPDFs(query, { date });
-          break;
-        case "video":
-          results = await searchVideos(query, { date });
-          break;
-        // ...existing cases...
-        default:
-          // Perform parallel searches with error handling
-          const searchPromises = [
-            searchPDFs(query, { date }).catch(() => []),
-            searchVideos(query, { date }).catch(() => []),
-            searchWebpages(query).catch(() => []),
-            searchWikipedia(query).catch(() => []),
-            searchAudio(query).catch(() => [])
-          ];
-
-          const searchResults = await Promise.all(searchPromises);
-          results = searchResults.flat();
-      }
-    } catch (searchError) {
-      console.error("Online search error:", searchError);
-      results = [];
-    }
-
-    // Combine and filter results
-    let combinedResults = [...databaseResults, ...results];
-
-    // Apply filters
-    if (date !== 'all') {
-      const now = new Date();
-      const timeRanges = {
-        day: 86400000,
-        week: 604800000,
-        month: 2592000000,
-        year: 31536000000
+        resourceId: resource._id.toString(),  // Ensure it's a string
+        isUploadedFile: resource.isUploadedFile || false
       };
-      
-      combinedResults = combinedResults.filter(result => {
-        if (!result.publishedDate) return true;
-        const publicationDate = new Date(result.publishedDate);
-        return !isNaN(publicationDate) && (now - publicationDate) <= timeRanges[date];
-      });
+    });
+    
+    // Based on the requested resource type, call the appropriate online search function
+    switch (type) {
+      case "pdf":
+        results = await searchPDFs(query);
+        break;
+      case "video":
+        results = await searchVideos(query);
+        break;
+      case "webpage":
+        results = await searchWebpages(query);
+        break;
+      case "wikipedia":
+        results = await searchWikipedia(query);
+        break;
+      case "audio":
+        results = await searchAudio(query);
+        break;
+      default:
+        // Search all types and combine results
+        const [pdfs, videos, webpages, wikipedia, audio] = await Promise.all([
+          searchPDFs(query).catch(err => {
+            console.error("PDF search error:", err);
+            return [];
+          }),
+          searchVideos(query).catch(err => {
+            console.error("Video search error:", err);
+            return [];
+          }),
+          searchWebpages(query).catch(err => {
+            console.error("Webpage search error:", err);
+            return [];
+          }),
+          searchWikipedia(query).catch(err => {
+            console.error("Wikipedia search error:", err);
+            return [];
+          }),
+          searchAudio(query).catch(err => {
+            console.error("Audio search error:", err);
+            return [];
+          })
+        ]);
+        
+        results = [...pdfs, ...videos, ...webpages, ...wikipedia, ...audio];
     }
-
-    // Apply sorting
-    combinedResults.sort((a, b) => {
-      if (sort === 'date') {
-        const dateA = new Date(a.publishedDate || 0);
-        const dateB = new Date(b.publishedDate || 0);
-        return dateB - dateA;
-      }
-      return (b.relevanceScore || 0) - (a.relevanceScore || 0);
-    });
-
-    return res.status(200).json({ 
-      results: combinedResults,
-      total: combinedResults.length
-    });
-
+    
+    // Combine database resources with online resources
+    const combinedResults = [...databaseResults, ...results];
+    
+    // Even if all search functions fail, database results might still have content
+    if (!combinedResults.length) {
+      return res.status(200).json({ results: [] });
+    }
+    
+    res.status(200).json({ results: combinedResults });
   } catch (error) {
     console.error("Error in searchResources:", error);
-    return res.status(500).json({ 
-      message: "An error occurred while searching for resources",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ message: `Error fetching resources: ${error.message}` });
   }
 };
 
@@ -269,7 +256,7 @@ async function searchPDFsBackup(query) {
 }
 
 // Search for videos on YouTube
-async function searchVideos(query, filters) {
+async function searchVideos(query) {
   try {
     const apiKey = process.env.YOUTUBE_API_KEY || process.env.GOOGLE_API_KEY;
     
@@ -287,11 +274,7 @@ async function searchVideos(query, filters) {
       url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
       type: "video",
       description: item.snippet.description,
-      thumbnail: item.snippet.thumbnails.medium.url,
-      publishedDate: item.snippet.publishedAt,
-      domain: 'YouTube',
-      language: item.snippet.defaultLanguage || 'en',
-      relevanceScore: 0.9
+      thumbnail: item.snippet.thumbnails.medium.url
     }));
   } catch (error) {
     console.error("Error searching videos via YouTube API:", error.message);
