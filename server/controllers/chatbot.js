@@ -1,6 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import PDFDocument from 'pdfkit';
+import fs from 'fs';
+import path from 'path';
 import Lecture from '../models/Lecture.js';
 import Courses from '../models/Courses.js';
+import Resource from '../models/Resource.js';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
 
@@ -54,6 +58,50 @@ export const handleChatQuery = async (req, res) => {
         res.status(500).json({
             message: 'Error processing chat query',
             error: error.message,
+        });
+    }
+};
+
+export const saveResponseAsResource = async (req, res) => {
+    try {
+        const { title, content, lectureId } = req.body;
+
+        // Create PDF
+        const doc = new PDFDocument();
+        const timestamp = Date.now();
+        const filename = `chatbot_response_${timestamp}.pdf`;
+        const filepath = path.join('Uploads', filename);
+
+        // Pipe PDF to file
+        doc.pipe(fs.createWriteStream(filepath));
+
+        // Add content to PDF
+        doc.fontSize(16).text(title, { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(12).text(content);
+
+        // Finalize PDF
+        doc.end();
+
+        // Create resource entry
+        const resource = await Resource.create({
+            title,
+            type: 'pdf',
+            url: filepath,
+            description: 'Chatbot response converted to PDF',
+            lecture: lectureId,
+            isUploadedFile: true
+        });
+
+        res.json({
+            message: 'Response saved as resource successfully',
+            resource
+        });
+    } catch (error) {
+        console.error('Error saving response as resource:', error);
+        res.status(500).json({
+            message: 'Error saving response',
+            error: error.message
         });
     }
 };
