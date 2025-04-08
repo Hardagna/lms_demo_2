@@ -1049,3 +1049,64 @@
 .resources-section .teaching-assistants-list li:last-child {
   margin-bottom: 0;
 }
+
+.search-filters {
+  background: #f5f5f5;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-weight: 500;
+  margin: 0;
+}
+
+.filter-group select {
+  padding: 5px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+}
+
+.resource-metadata {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.metadata-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.metadata-item i {
+  font-size: 0.9em;
+  color: #888;
+}
+
+.resource-result-item {
+  background: white;
+  padding: 15px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+.resource-result-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}

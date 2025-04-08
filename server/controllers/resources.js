@@ -10,14 +10,14 @@ dotenv.config();
 export const searchResources = async (req, res) => {
   try {
     const { query, type } = req.query;
-    
+
     if (!query) {
       return res.status(400).json({ message: "Search query is required" });
     }
-    
+
     let results = [];
     let databaseResults = [];
-    
+
     // First, search for resources in the database that match the query
     const dbSearchRegex = new RegExp(query, 'i'); // Case-insensitive search
     const dbSearchQuery = {
@@ -26,17 +26,17 @@ export const searchResources = async (req, res) => {
         { description: { $regex: dbSearchRegex } }
       ]
     };
-    
+
     // Filter by type if specified
     if (type && type !== 'all') {
       dbSearchQuery.type = type;
     }
-    
+
     // Search the database for matching resources
     databaseResults = await Resource.find(dbSearchQuery)
       .populate('lecture', 'title') // Include lecture title for context
       .limit(10);
-    
+
     // Format database results to match the structure of online results
     databaseResults = databaseResults.map(resource => {
       // Normalize the URL to prevent path issues
@@ -44,7 +44,7 @@ export const searchResources = async (req, res) => {
       if (normalizedUrl.startsWith('//')) {
         normalizedUrl = normalizedUrl.replace('//', '/');
       }
-      
+
       return {
         title: resource.title,
         url: normalizedUrl,
@@ -57,7 +57,7 @@ export const searchResources = async (req, res) => {
         isUploadedFile: resource.isUploadedFile || false
       };
     });
-    
+
     // Based on the requested resource type, call the appropriate online search function
     switch (type) {
       case "pdf":
@@ -99,18 +99,18 @@ export const searchResources = async (req, res) => {
             return [];
           })
         ]);
-        
+
         results = [...pdfs, ...videos, ...webpages, ...wikipedia, ...audio];
     }
-    
+
     // Combine database resources with online resources
     const combinedResults = [...databaseResults, ...results];
-    
+
     // Even if all search functions fail, database results might still have content
     if (!combinedResults.length) {
       return res.status(200).json({ results: [] });
     }
-    
+
     res.status(200).json({ results: combinedResults });
   } catch (error) {
     console.error("Error in searchResources:", error);
@@ -123,13 +123,13 @@ export const addResource = async (req, res) => {
   try {
     const { lectureId } = req.params;
     const { title, type, url, description } = req.body;
-    
+
     const lecture = await Lecture.findById(lectureId);
-    
+
     if (!lecture) {
       return res.status(404).json({ message: "Lecture not found" });
     }
-    
+
     const resource = await Resource.create({
       title,
       type,
@@ -137,10 +137,10 @@ export const addResource = async (req, res) => {
       description,
       lecture: lectureId
     });
-    
-    res.status(201).json({ 
-      message: "Resource added successfully", 
-      resource 
+
+    res.status(201).json({
+      message: "Resource added successfully",
+      resource
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -162,16 +162,16 @@ export const getLectureResources = async (req, res) => {
 export const deleteResource = async (req, res) => {
   try {
     const { resourceId } = req.params;
-    
+
     const resource = await Resource.findByIdAndDelete(resourceId);
-    
+
     if (!resource) {
       return res.status(404).json({ message: "Resource not found" });
     }
-    
-    res.status(200).json({ 
-      message: "Resource deleted successfully", 
-      resource 
+
+    res.status(200).json({
+      message: "Resource deleted successfully",
+      resource
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -184,28 +184,30 @@ export const deleteResource = async (req, res) => {
 // Search for PDFs using Google Custom Search API
 async function searchPDFs(query) {
   try {
-    // Google Custom Search API requires API key and Custom Search Engine ID
     const apiKey = process.env.GOOGLE_API_KEY;
     const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
-    
+
     if (!apiKey || !searchEngineId) {
       console.warn("Google API key or Search Engine ID not configured. Using backup search method.");
       return searchPDFsBackup(query);
     }
-    
+
     const response = await axios.get(
       `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}+filetype:pdf`
     );
-    
+
     if (!response.data.items || response.data.items.length === 0) {
       return [];
     }
-    
+
     return response.data.items.map(item => ({
       title: item.title,
       url: item.link,
       type: "pdf",
-      description: item.snippet || `PDF document related to ${query}`
+      description: item.snippet || `PDF document related to ${query}`,
+      date: item.pagemap?.metatags?.[0]?.['date'] ||
+        item.pagemap?.metatags?.[0]?.['article:published_time'] ||
+        'Publication date not available'
     }));
   } catch (error) {
     console.error("Error searching PDFs via Google API:", error.message);
@@ -225,10 +227,10 @@ async function searchPDFsBackup(query) {
         }
       }
     );
-    
+
     const $ = cheerio.load(response.data);
     const results = [];
-    
+
     // Extract search results
     $('.result__body').each((i, element) => {
       if (i < 8) { // Limit results
@@ -236,7 +238,7 @@ async function searchPDFsBackup(query) {
         const title = titleElement.text().trim();
         const url = titleElement.attr('href');
         const description = $(element).find('.result__snippet').text().trim();
-        
+
         if (url && url.toLowerCase().endsWith('.pdf')) {
           results.push({
             title,
@@ -247,7 +249,7 @@ async function searchPDFsBackup(query) {
         }
       }
     });
-    
+
     return results;
   } catch (error) {
     console.error("Error in backup PDF search:", error.message);
@@ -259,22 +261,23 @@ async function searchPDFsBackup(query) {
 async function searchVideos(query) {
   try {
     const apiKey = process.env.YOUTUBE_API_KEY || process.env.GOOGLE_API_KEY;
-    
+
     if (!apiKey) {
       console.warn("YouTube API key not configured. Using backup search method.");
       return searchVideosBackup(query);
     }
-    
+
     const response = await axios.get(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&key=${apiKey}&maxResults=8&type=video`
     );
-    
+
     return response.data.items.map(item => ({
       title: item.snippet.title,
       url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
       type: "video",
       description: item.snippet.description,
-      thumbnail: item.snippet.thumbnails.medium.url
+      thumbnail: item.snippet.thumbnails.medium.url,
+      date: item.snippet.publishedAt || 'Publication date not available'
     }));
   } catch (error) {
     console.error("Error searching videos via YouTube API:", error.message);
@@ -294,7 +297,7 @@ async function searchVideosBackup(query) {
         }
       }
     );
-    
+
     return response.data.slice(0, 8).map(item => ({
       title: item.title,
       url: `https://www.youtube.com/watch?v=${item.videoId}`,
@@ -327,21 +330,24 @@ async function searchWebpages(query) {
   try {
     const apiKey = process.env.GOOGLE_API_KEY;
     const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
-    
+
     if (!apiKey || !searchEngineId) {
       console.warn("Google API key or Search Engine ID not configured. Using backup search method.");
       return searchWebpagesBackup(query);
     }
-    
+
     const response = await axios.get(
       `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}`
     );
-    
+
     return response.data.items.map(item => ({
       title: item.title,
       url: item.link,
       type: "webpage",
-      description: item.snippet || `Webpage about ${query}`
+      description: item.snippet || `Webpage about ${query}`,
+      date: item.pagemap?.metatags?.[0]?.['article:published_time'] ||
+        item.pagemap?.metatags?.[0]?.['date'] ||
+        'Publication date not available'
     }));
   } catch (error) {
     console.error("Error searching webpages via Google API:", error.message);
@@ -361,10 +367,10 @@ async function searchWebpagesBackup(query) {
         }
       }
     );
-    
+
     const $ = cheerio.load(response.data);
     const results = [];
-    
+
     // Extract search results
     $('.result__body').each((i, element) => {
       if (i < 8) { // Limit results
@@ -372,7 +378,7 @@ async function searchWebpagesBackup(query) {
         const title = titleElement.text().trim();
         const url = titleElement.attr('href');
         const description = $(element).find('.result__snippet').text().trim();
-        
+
         if (url && !url.toLowerCase().endsWith('.pdf')) { // Exclude PDFs
           results.push({
             title,
@@ -383,7 +389,7 @@ async function searchWebpagesBackup(query) {
         }
       }
     });
-    
+
     return results;
   } catch (error) {
     console.error("Error in backup webpage search:", error.message);
@@ -394,20 +400,40 @@ async function searchWebpagesBackup(query) {
 // Search for Wikipedia articles
 async function searchWikipedia(query) {
   try {
-    const response = await axios.get(
+    // First get search results
+    const searchResponse = await axios.get(
       `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*&utf8=1`
     );
-    
-    if (!response.data.query || !response.data.query.search) {
+
+    if (!searchResponse.data.query || !searchResponse.data.query.search) {
       return [];
     }
-    
-    return response.data.query.search.map(item => ({
-      title: item.title,
-      url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/\s+/g, '_'))}`,
-      type: "wikipedia",
-      description: item.snippet.replace(/<[^>]*>/g, '') || `Wikipedia article about ${item.title}`
-    }));
+
+    // Get page details including last modified date
+    const results = await Promise.all(
+      searchResponse.data.query.search.map(async (item) => {
+        try {
+          const pageInfoResponse = await axios.get(
+            `https://en.wikipedia.org/w/api.php?action=query&prop=revisions&pageids=${item.pageid}&format=json&origin=*&rvprop=timestamp`
+          );
+
+          const timestamp = pageInfoResponse.data.query?.pages?.[item.pageid]?.revisions?.[0]?.timestamp;
+
+          return {
+            title: item.title,
+            url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/\s+/g, '_'))}`,
+            type: "wikipedia",
+            description: item.snippet.replace(/<[^>]*>/g, '') || `Wikipedia article about ${item.title}`,
+            date: timestamp || 'Last modified date not available'
+          };
+        } catch (error) {
+          console.error("Error fetching Wikipedia page details:", error);
+          return null;
+        }
+      })
+    );
+
+    return results.filter(result => result !== null);
   } catch (error) {
     console.error("Error searching Wikipedia:", error.message);
     return [
@@ -425,20 +451,20 @@ async function searchWikipedia(query) {
 async function searchAudio(query) {
   try {
     const freesoundApiKey = process.env.FREESOUND_API_KEY;
-    
+
     if (!freesoundApiKey) {
       console.warn("Freesound API key not configured. Using backup search method.");
       return searchAudioBackup(query);
     }
-    
+
     const response = await axios.get(
       `https://freesound.org/apiv2/search/text/?query=${encodeURIComponent(query)}&token=${freesoundApiKey}&fields=id,name,description,previews&page_size=8`
     );
-    
+
     if (!response.data.results || response.data.results.length === 0) {
       return searchAudioBackup(query);
     }
-    
+
     return response.data.results.map(item => ({
       title: item.name,
       url: item.previews['preview-hq-mp3'],
@@ -489,17 +515,17 @@ export const uploadResourceFile = async (req, res) => {
   try {
     const { lectureId } = req.params;
     const { title, description, type } = req.body;
-    
+
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
-    
+
     const lecture = await Lecture.findById(lectureId);
-    
+
     if (!lecture) {
       return res.status(404).json({ message: "Lecture not found" });
     }
-    
+
     // Create the resource with file information
     const resource = await Resource.create({
       title,
@@ -509,10 +535,10 @@ export const uploadResourceFile = async (req, res) => {
       lecture: lectureId,
       isUploadedFile: true
     });
-    
-    res.status(201).json({ 
-      message: "Resource file uploaded successfully", 
-      resource 
+
+    res.status(201).json({
+      message: "Resource file uploaded successfully",
+      resource
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -523,7 +549,7 @@ export const uploadResourceFile = async (req, res) => {
 // Helper function to determine resource type based on file extension
 function determineResourceType(filename) {
   const extension = filename.split('.').pop().toLowerCase();
-  
+
   if (['pdf', 'doc', 'docx', 'txt'].includes(extension)) {
     return 'pdf'; // Using 'pdf' category for documents
   } else if (['mp4', 'avi', 'mov', 'wmv'].includes(extension)) {
@@ -543,45 +569,45 @@ function determineResourceType(filename) {
 export const copyResource = async (req, res) => {
   try {
     const { sourceResourceId, targetLectureId } = req.body;
-    
+
     console.log("Copy resource request:", req.body);  // Debug log
-    
+
     if (!sourceResourceId || !targetLectureId) {
-      return res.status(400).json({ 
-        message: "Source resource ID and target lecture ID are required" 
+      return res.status(400).json({
+        message: "Source resource ID and target lecture ID are required"
       });
     }
-    
+
     // Find the source resource
     const sourceResource = await Resource.findById(sourceResourceId);
-    
+
     if (!sourceResource) {
       console.log(`Resource with ID ${sourceResourceId} not found`);
       return res.status(404).json({ message: "Source resource not found" });
     }
-    
+
     // Find the target lecture
     const targetLecture = await Lecture.findById(targetLectureId);
-    
+
     if (!targetLecture) {
       console.log(`Lecture with ID ${targetLectureId} not found`);
       return res.status(404).json({ message: "Target lecture not found" });
     }
-    
+
     console.log("Found source resource:", sourceResource);  // Debug log
-    
+
     // Check if this resource already exists in the target lecture
     const existingResource = await Resource.findOne({
       title: sourceResource.title,
       lecture: targetLectureId
     });
-    
+
     if (existingResource) {
-      return res.status(400).json({ 
-        message: "This resource already exists in the selected lecture" 
+      return res.status(400).json({
+        message: "This resource already exists in the selected lecture"
       });
     }
-    
+
     // Create a new resource based on the source
     const newResource = new Resource({
       title: sourceResource.title,
@@ -591,9 +617,9 @@ export const copyResource = async (req, res) => {
       lecture: targetLectureId,
       isUploadedFile: sourceResource.isUploadedFile
     });
-    
+
     await newResource.save();
-    
+
     res.status(201).json({
       message: "Resource copied successfully",
       resource: newResource

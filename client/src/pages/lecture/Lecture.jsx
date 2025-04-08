@@ -57,6 +57,79 @@ const Lecture = ({ user }) => {
     const params = useParams();
     const navigate = useNavigate();
 
+    // Add new state variables for filters
+    const [dateFilter, setDateFilter] = useState('all');
+    const [languageFilter, setLanguageFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('relevance');
+    const [filteredResults, setFilteredResults] = useState([]);
+
+    // Update the formatDate function to handle various date formats
+    const formatDate = (dateString) => {
+        if (!dateString || dateString === 'Publication date not available') {
+            return 'Publication date not available';
+        }
+
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return 'Invalid date format';
+            }
+
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return 'Date formatting error';
+        }
+    };
+
+    // Add this function to filter and sort results
+    const applyFilters = (results) => {
+        let filtered = [...results];
+
+        // Apply date filter
+        if (dateFilter !== 'all') {
+            const now = new Date();
+            filtered = filtered.filter(result => {
+                const resultDate = new Date(result.date);
+                switch (dateFilter) {
+                    case 'day':
+                        return (now - resultDate) <= 86400000; // 24 hours
+                    case 'week':
+                        return (now - resultDate) <= 604800000; // 7 days
+                    case 'month':
+                        return (now - resultDate) <= 2592000000; // 30 days
+                    case 'year':
+                        return (now - resultDate) <= 31536000000; // 365 days
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        // Apply language filter
+        if (languageFilter !== 'all') {
+            filtered = filtered.filter(result => result.language === languageFilter);
+        }
+
+        // Apply sorting
+        filtered.sort((a, b) => {
+            switch (sortBy) {
+                case 'date':
+                    return new Date(b.date) - new Date(a.date);
+                case 'title':
+                    return a.title.localeCompare(b.title);
+                default: // 'relevance' remains unchanged
+                    return 0;
+            }
+        });
+
+        return filtered;
+    };
+
     async function getLectures() {
         try {
             setLoading(true);
@@ -205,9 +278,19 @@ const Lecture = ({ user }) => {
             );
 
             if (response.data.results) {
-                setSearchResults(response.data.results);
+                const resultsWithMetadata = response.data.results.map(result => ({
+                    ...result,
+                    // Don't override existing date from the server
+                    language: result.language || 'en',
+                    fileSize: result.fileSize || 'Unknown size',
+                    format: result.format || 'Unknown format',
+                    source: result.source || 'Web'
+                }));
+                setSearchResults(resultsWithMetadata);
+                setFilteredResults(applyFilters(resultsWithMetadata));
             } else {
                 setSearchResults([]);
+                setFilteredResults([]);
                 toast.info('No resources found for your query');
             }
 
@@ -495,7 +578,7 @@ const Lecture = ({ user }) => {
         fetchComments();
     }, [params.id]);
 
-    // Update the renderResource function to handle local resources differently
+    // Update the renderResource function to include metadata
     const renderResource = (resource, index) => {
         return (
             <div key={index} className="resource-result-item">
@@ -504,6 +587,24 @@ const Lecture = ({ user }) => {
                     <div className="resource-details">
                         <h4>{resource.title}</h4>
                         <p>{resource.description}</p>
+                        <div className="resource-metadata">
+                            <span className="metadata-item">
+                                <i className="far fa-calendar-alt"></i>
+                                {formatDate(resource.date)}
+                            </span>
+                            <span className="metadata-item">
+                                <i className="fas fa-globe"></i>
+                                {resource.language?.toUpperCase() || 'EN'}
+                            </span>
+                            <span className="metadata-item">
+                                <i className="fas fa-file-alt"></i>
+                                {resource.fileSize}
+                            </span>
+                            <span className="metadata-item">
+                                <i className="fas fa-link"></i>
+                                {resource.source}
+                            </span>
+                        </div>
                         {resource.isLocalResource && (
                             <p className="local-resource-info">
                                 <span className="badge bg-info">Local Resource</span>
@@ -616,6 +717,74 @@ const Lecture = ({ user }) => {
 
         return url;
     };
+
+    // Add this inside the showResourceSearch section, just after the existing form
+    const renderSearchFilters = () => (
+        <div className="search-filters">
+            <div className="filter-group">
+                <label>Date:</label>
+                <select value={dateFilter} onChange={(e) => {
+                    setDateFilter(e.target.value);
+                    setFilteredResults(applyFilters(searchResults));
+                }}>
+                    <option value="all">All Time</option>
+                    <option value="day">Past 24 Hours</option>
+                    <option value="week">Past Week</option>
+                    <option value="month">Past Month</option>
+                    <option value="year">Past Year</option>
+                </select>
+            </div>
+
+            <div className="filter-group">
+                <label>Language:</label>
+                <select value={languageFilter} onChange={(e) => {
+                    setLanguageFilter(e.target.value);
+                    setFilteredResults(applyFilters(searchResults));
+                }}>
+                    <option value="all">All Languages</option>
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                </select>
+            </div>
+
+            <div className="filter-group">
+                <label>Sort By:</label>
+                <select value={sortBy} onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setFilteredResults(applyFilters(searchResults));
+                }}>
+                    <option value="relevance">Relevance</option>
+                    <option value="date">Date</option>
+                    <option value="title">Title</option>
+                </select>
+            </div>
+        </div>
+    );
+
+    // Modify the search results rendering section to use filtered results
+    const renderSearchResults = () => (
+        <div className="search-results-container mt-4">
+            <h5>Search Results</h5>
+            {searching ? (
+                <div className="text-center">
+                    <div className="spinner-border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            ) : filteredResults.length > 0 ? (
+                <>
+                    {renderSearchFilters()}
+                    <div className="search-results-list">
+                        {filteredResults.map((resource, index) => renderResource(resource, index))}
+                    </div>
+                </>
+            ) : (
+                <p className="text-muted">No results found</p>
+            )}
+        </div>
+    );
 
     return (
         <div className="lec-page">
@@ -808,22 +977,7 @@ const Lecture = ({ user }) => {
                                     </button>
                                 </form>
 
-                                <div className="search-results-container mt-4">
-                                    <h5>Search Results</h5>
-                                    {searching ? (
-                                        <div className="text-center">
-                                            <div className="spinner-border" role="status">
-                                                <span className="visually-hidden">Loading...</span>
-                                            </div>
-                                        </div>
-                                    ) : searchResults.length > 0 ? (
-                                        <div className="search-results-list">
-                                            {searchResults.map((resource, index) => renderResource(resource, index))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-muted">No results found</p>
-                                    )}
-                                </div>
+                                {renderSearchResults()}
                             </div>
                         )}
 
