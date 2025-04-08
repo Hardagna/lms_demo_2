@@ -13,14 +13,14 @@ app.use(cors());
 const port = process.env.PORT;
 
 app.get('/', (req, res) => {
-    res.send('Server is ready');
+  res.send('Server is ready');
 });
 app.use('/Uploads', express.static('Uploads'));
 
 app.use((req, res, next) => {
-    // Add appropriate headers to allow resource loading
-    res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'");
-    next();
+  // Add appropriate headers to allow resource loading
+  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'");
+  next();
 });
 
 import userRoutes from './routes/user.js';
@@ -28,12 +28,14 @@ import courseRoutes from './routes/course.js';
 import adminRoutes from './routes/admin.js';
 import resourcesRoutes from './routes/resources.js';
 import commentRoutes from './routes/comment.js';
+import chatbotRoutes from './routes/chatbot.js';
 
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/resources', resourcesRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/admin/chatbot', chatbotRoutes);
 
 app.listen(3000, () => {
   console.log('Server is running on http://localhost:3000');

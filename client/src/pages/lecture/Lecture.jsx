@@ -11,6 +11,7 @@ import { FaSearch, FaFilePdf, FaYoutube, FaGlobe, FaWikipediaW, FaHeadphones, Fa
 import { FaFileUpload, FaFile, FaFileImage, FaFileAudio, FaFileVideo, FaFileAlt } from 'react-icons/fa';
 import { CourseData } from '../../context/CourseContext';
 import TeachingAssistantsList from '../../components/TeachingAssistantsList';
+import LectureChatbot from '../../components/chatbot/LectureChatbot';
 
 const Lecture = ({ user }) => {
     const { teachingAssistants, fetchTeachingAssistants } = CourseData();
@@ -381,7 +382,7 @@ const Lecture = ({ user }) => {
         if (resource.isLocalResource) {
             // Fix URL path issues with uploaded resources
             let fullUrl = resource.url;
-            
+
             // If URL is relative and not correctly formatted, fix it
             if (!fullUrl.startsWith('http') && !fullUrl.startsWith('/')) {
                 fullUrl = `/${fullUrl}`;
@@ -389,17 +390,17 @@ const Lecture = ({ user }) => {
                 // Fix double slash issue
                 fullUrl = fullUrl.replace('//', '/');
             }
-            
+
             // Make sure it points to the server
             if (!fullUrl.startsWith('http')) {
                 fullUrl = `${server}${fullUrl}`;
             }
-            
+
             return (
-                <a 
-                    href={fullUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                <a
+                    href={fullUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="resource-link"
                 >
                     View Resource
@@ -407,10 +408,10 @@ const Lecture = ({ user }) => {
             );
         } else {
             return (
-                <a 
-                    href={resource.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                <a
+                    href={resource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="resource-link"
                 >
                     {truncateUrl(resource.url)}
@@ -549,9 +550,9 @@ const Lecture = ({ user }) => {
 
             // Check if we have the required fields
             if (!resource.resourceId || !selectedLectureForResource) {
-                console.error("Missing resource data:", { 
-                    resourceId: resource.resourceId, 
-                    targetLecture: selectedLectureForResource 
+                console.error("Missing resource data:", {
+                    resourceId: resource.resourceId,
+                    targetLecture: selectedLectureForResource
                 });
                 toast.error('Missing resource information or target lecture');
                 setBtnLoading(false);
@@ -586,7 +587,7 @@ const Lecture = ({ user }) => {
             if (error.response) {
                 console.error('Server response:', error.response.data);
             }
-            
+
             // More specific error message based on the response
             const errorMessage = error.response?.data?.message || 'Failed to add resource to lecture';
             toast.error(errorMessage);
@@ -597,22 +598,22 @@ const Lecture = ({ user }) => {
     // Helper function to normalize file URLs
     const normalizeFileUrl = (url) => {
         if (!url) return '';
-        
+
         // Fix double slash issues
         if (url.startsWith('//')) {
             url = url.replace('//', '/');
         }
-        
+
         // If URL is relative and not correctly formatted, fix it
         if (!url.startsWith('http') && !url.startsWith('/')) {
             url = `/${url}`;
         }
-        
+
         // If it's a relative URL, add the server base
         if (!url.startsWith('http')) {
             url = `${server}${url}`;
         }
-        
+
         return url;
     };
 
@@ -950,6 +951,11 @@ const Lecture = ({ user }) => {
                                         )}
 
                                         <p>{lecture.description}</p>
+
+                                        {/* Add chatbot for admins and TAs */}
+                                        {canManageCourse() && (
+                                            <LectureChatbot lecture={lecture} user={user} />
+                                        )}
 
                                         {/* Lecture Resources Section */}
                                         <div className="resources-section">
