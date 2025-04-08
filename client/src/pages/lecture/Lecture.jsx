@@ -59,7 +59,6 @@ const Lecture = ({ user }) => {
 
     // Add new state variables for filters
     const [dateFilter, setDateFilter] = useState('all');
-    const [languageFilter, setLanguageFilter] = useState('all');
     const [sortBy, setSortBy] = useState('relevance');
     const [filteredResults, setFilteredResults] = useState([]);
 
@@ -108,11 +107,6 @@ const Lecture = ({ user }) => {
                         return true;
                 }
             });
-        }
-
-        // Apply language filter
-        if (languageFilter !== 'all') {
-            filtered = filtered.filter(result => result.language === languageFilter);
         }
 
         // Apply sorting
@@ -732,20 +726,6 @@ const Lecture = ({ user }) => {
                     <option value="week">Past Week</option>
                     <option value="month">Past Month</option>
                     <option value="year">Past Year</option>
-                </select>
-            </div>
-
-            <div className="filter-group">
-                <label>Language:</label>
-                <select value={languageFilter} onChange={(e) => {
-                    setLanguageFilter(e.target.value);
-                    setFilteredResults(applyFilters(searchResults));
-                }}>
-                    <option value="all">All Languages</option>
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
                 </select>
             </div>
 
